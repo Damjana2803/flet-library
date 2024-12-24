@@ -10,28 +10,20 @@ class User:
 		self.db_path = db_path
 
 	def _connect(self):
-		return sqlite3.connect(os.getenv('DB_NAME'))
+		return sqlite3.connect(self.db_path)
 
 	def create_user(self, name: str, email: str, password: str, faculty: str) -> bool:
 		with self._connect() as conn:
 			try:
 				cursor = conn.cursor()
 				hashed_password = self._hash_password(password)
-				id = self._ensure_unique_id()
-				faculty_model = Faculty(self.conn)
-				faculty_res = faculty_model.find_if_faculty_exists(faculty)
-				
-				# move this to controller...
-				if(faculty_res is None):
-					raise Exception('Ne postoji taj fakultet') 
-				
-				faculty_id = faculty_res[0]
+				id = self._ensure_unique_id()				
 
 				cursor.execute('''
 					INSERT INTO 
 						users(id, name, email, password, faculty_id) 
 					VALUES(?, ?, ?, ?, ?)
-				''', (id, name, email, hashed_password, faculty_id))
+				''', (id, name, email, hashed_password, faculty))
 
 				conn.commit()
 				return True

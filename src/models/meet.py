@@ -59,7 +59,6 @@ class Meet:
 				WHERE meets.id = ?
 			''', (id, ))
 			
-
 			meet = cursor.fetchone()
 			
 			cursor.execute("SELECT COUNT(id) FROM users_meets WHERE id = ?", (id, ))
@@ -111,6 +110,62 @@ class Meet:
 
 			return meets_dict
 
+	# i ovde dodati broj zauzetih mesta...
+	def get_all_created_meets(self, user_id: int):
+		with self._connect() as conn:
+			conn.row_factory = sqlite3.Row
+			cursor = conn.cursor()
+			cursor.execute('''
+				SELECT 
+					meets.id AS meets_id,
+					meets.title AS meets_title,
+					meets.description AS meets_description,
+					meets.field AS meets_field,
+					meets.location AS meets_location, 
+					meets.start_date AS meets_start_date,
+					meets.start_time AS meets_start_time,
+					meets.users_limit AS meets_users_limit,
+					meets.created_by AS meets_created_by
+				FROM meets WHERE created_by = ?
+		''', (user_id, ))
+			
+			meets = cursor.fetchall()
+			meets_dict = convert_sqlite3rows_to_dict(meets)
+			return meets_dict
+		
+	def get_meet_info_by_creator(self, user_id: int, meet_id: int):
+		with self._connect() as conn:
+			conn.row_factory = sqlite3.Row
+			cursor = conn.cursor()
+			cursor.execute('''
+				SELECT
+					users.id as users_id,
+					users.name as users_name,
+					faculties.name as faculty,
+					meets.id as meets_id,
+					meets.title as meets_title,
+					meets.description as meets_description,
+					meets.field as meets_field,
+					meets.location as meets_location, 
+					meets.start_date as meets_start_date,
+					meets.start_time as meets_start_time,
+					meets.users_limit as meets_user_limit,
+					meets.created_by as meets_created_by
+				FROM meets
+				INNER JOIN users
+				ON users.id = meets.created_by
+				LEFT JOIN faculties
+				ON users.faculty_id = faculties.id
+				WHERE meets.creator_id = ?
+				AND meets.id = ?
+			''', (user_id, meet_id))
+
+			meet = cursor.fetchone()
+
+			meet_dict = convert_sqlite3rows_to_dict(meet)
+
+			return meet_dict
+	
 	def _ensure_unique_id(self, int_from = 100000000, int_to = 999999999) -> int:
 		with self._connect() as conn: 
 			cursor = conn.cursor()

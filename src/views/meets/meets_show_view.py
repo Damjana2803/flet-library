@@ -40,10 +40,6 @@ def meets_show_screen(page_data: PageData):
 			user_is_signed = await handle_check_if_user_is_signed(user_id, meet_data['meets_id'])
 
 		loader.delete_loader()
-
-
-
-		print(user_is_creator, user_is_signed)
 		
 		if meet_data['found'] == False:
 			page_data.navigate('not_found')

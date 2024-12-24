@@ -161,6 +161,7 @@ cython_debug/
 
 # Flet
 storage/
+_test.py
 
 # VSCODE
 .vscode/

@@ -2,6 +2,7 @@ import flet as ft, re, datetime, asyncio
 from flet_navigator import PageData
 from controllers.meets_controller import handle_create_meet
 from components.loader import Loader
+from components.responsive_container import ResponsiveContainer
 
 def meets_create_screen(page_data: PageData):
 	global selected_date
@@ -51,69 +52,87 @@ def meets_create_screen(page_data: PageData):
 	location_tf = ft.TextField(label='Lokacija održavanja')
 	time_tf = ft.TimePicker(help_text='Izaberi vreme održavanja Simpozijuma')
 	limit_tf = ft.TextField(label='Slobodna mesta', keyboard_type=ft.KeyboardType.NUMBER, on_change=handle_number_input, max_length=2)
-	date_tf = ft.TextField(label='Datum održavanja', value=selected_date.strftime('%d.%m.%Y.'), disabled=True)
-	time_tf = ft.TextField(label='Vreme održavanja', value=selected_time.strftime("%H:%M"), disabled=True)
+	date_tf = ft.TextField(label='Datum održavanja', value=selected_date.strftime('%d.%m.%Y.'), disabled=True, expand=True)
+	time_tf = ft.TextField(label='Vreme održavanja', value=selected_time.strftime("%H:%M"), disabled=True, expand=True)
 	
 	container = ft.Container(
 		ft.Column(
 			[
 				ft.Row(
-					[ft.Text('Kreiraj novi Simpozijum', theme_style=ft.TextThemeStyle.HEADLINE_MEDIUM)],
+					[ ft.Text('Kreiraj novi Simpozijum', theme_style=ft.TextThemeStyle.HEADLINE_MEDIUM) ],
 					alignment=ft.MainAxisAlignment.CENTER,
+					spacing=10
 				),
 				title_tf,
 				description_tf,
 				field_tf,
 				location_tf,
-				ft.Row(
+				ft.ResponsiveRow(
 					[
-						ft.Row(
-							[
-								ft.ElevatedButton(
-									'Izaberi datum',
-									icon=ft.Icons.CALENDAR_MONTH,
-									on_click=lambda e: page.open(
-										ft.DatePicker(
-											help_text = 'Datum održavanja',
-											first_date=datetime.datetime.now(),
-											last_date=datetime.datetime.now() + datetime.timedelta(days = 60),
-											on_change=handle_date_change,
-											value=selected_date
-										)
-									),
-								),
-								date_tf
+						ft.Column(
+							col={'lg': 6, 'xl': 3},
+							controls=[
+								ft.Row(
+									[
+										ft.ElevatedButton(
+											'Izaberi datum',
+											icon=ft.Icons.CALENDAR_MONTH,
+											on_click=lambda e: page.open(
+												ft.DatePicker(
+													help_text = 'Datum održavanja',
+													first_date=datetime.datetime.now(),
+													last_date=datetime.datetime.now() + datetime.timedelta(days = 60),
+													on_change=handle_date_change,
+													value=selected_date
+												)
+											),
+										),
+										date_tf
+									],
+								)
 							]
 						),
-						ft.Row(
-							[
-								ft.ElevatedButton(
-									'Izaberi vreme',
-									icon=ft.Icons.CALENDAR_MONTH,
-									on_click=lambda e: page.open(
-										 ft.TimePicker(
-												error_invalid_text='Vreme nije validno',
-												hour_label_text='H',
-												minute_label_text= 'M',
-												help_text='Izaberi vreme održavanja',
-												on_change=handle_time_change,
-												time_picker_entry_mode=ft.TimePickerEntryMode.INPUT,
-												value=selected_time
-										)
-									),
-								),
-								time_tf
+						ft.Column(
+							col={'lg': 6, 'xl': 3},
+							controls=[
+								ft.Row(
+									[
+										ft.ElevatedButton(
+											'Izaberi vreme',
+											icon=ft.Icons.CALENDAR_MONTH,
+											on_click=lambda e: page.open(
+												ft.TimePicker(
+														error_invalid_text='Vreme nije validno',
+														hour_label_text='H',
+														minute_label_text= 'M',
+														help_text='Izaberi vreme održavanja',
+														on_change=handle_time_change,
+														time_picker_entry_mode=ft.TimePickerEntryMode.INPUT,
+														value=selected_time
+												)
+											),
+										),
+										time_tf
+									]
+								)
 							]
 						)
 					],
+					alignment=ft.MainAxisAlignment.SPACE_AROUND
 				),
 				limit_tf,
-				ft.Row(
-					[ ft.ElevatedButton('Kreiraj simpozijum', on_click =  lambda _: asyncio.run(on_submit())) ],
-					alignment=ft.MainAxisAlignment.CENTER
-				),
+				ResponsiveContainer(
+					[
+						ft.ElevatedButton(	
+							'Kreiraj simpozijum',
+							height=50,
+							expand=True,
+							on_click =  lambda _: asyncio.run(on_submit())
+						)
+					]
+				)
 			]
-		)
+		),
 	)
 
-	return container
+	return ft.SafeArea(container)
