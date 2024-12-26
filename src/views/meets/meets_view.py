@@ -47,8 +47,7 @@ def meets_screen(page_data: PageData):
 		spacing=10
 	)
 
-	container = ft.SafeArea(
-		ft.Container(
+	container = ft.Container(
 			ft.Column(
 				[
 					column,
@@ -56,7 +55,6 @@ def meets_screen(page_data: PageData):
 				]
 			)
 		)
-	)
 
 	async def on_mount():
 		global meets_data 
@@ -77,4 +75,4 @@ def meets_screen(page_data: PageData):
 			page.update()
 
 	asyncio.run(on_mount())
-	return container
+	return ft.SafeArea(container)

@@ -2,6 +2,8 @@ import sqlite3, random, os
 from hashlib import sha256
 from dotenv import load_dotenv
 from models.faculty import Faculty
+from utils.helper_func import convert_sqlite3rows_to_dict
+
 
 load_dotenv()
 
@@ -12,12 +14,12 @@ class User:
 	def _connect(self):
 		return sqlite3.connect(self.db_path)
 
-	def create_user(self, name: str, email: str, password: str, faculty: str) -> bool:
+	def create_user(self, name: str, email: str, password: str, faculty: int) -> bool:
 		with self._connect() as conn:
 			try:
 				cursor = conn.cursor()
 				hashed_password = self._hash_password(password)
-				id = self._ensure_unique_id()				
+				id = self._ensure_unique_id()
 
 				cursor.execute('''
 					INSERT INTO 
@@ -77,6 +79,26 @@ class User:
 			
 			user['logged'] = True
 			return user
+
+	def get_all_users(self):
+		with self._connect() as conn:
+			conn.row_factory = sqlite3.Row
+			cursor = conn.cursor()
+
+			cursor.execute('''
+				SELECT 
+					users.id AS id,
+					users.name AS name,
+					users.email AS email,
+					faculties.name AS faculty
+				FROM users
+				LEFT JOIN faculties
+				ON faculties.id = users.faculty_id
+			''')
+
+			users = cursor.fetchall()
+
+			return convert_sqlite3rows_to_dict(users)
 
 	def _hash_password(self, password: str) -> str:
 		return sha256(password.encode('utf-8')).hexdigest()

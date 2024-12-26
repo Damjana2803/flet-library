@@ -17,7 +17,7 @@ class Meet:
 			try:
 				cursor = conn.cursor()
 				id = self._ensure_unique_id()
-				print('Hello')
+
 				cursor.execute('''
 					INSERT INTO 
 						meets(id, title, description, field, location, start_date, start_time, users_limit, created_by)
@@ -25,10 +25,15 @@ class Meet:
 				''', (id, title, description, field, location, start_date, start_time, users_limit, user_id))
 				
 				conn.commit()
-				return id
+				return {
+					'success': True,
+					'id': id
+				}
 			except Exception as e:
 				print(e)
-				return 0
+				return {
+					'success': False
+				}
 
 	# TODO: 
 	# dodaj i broj mesta koliko je zauzeto, bez info o korisnicima za sad... (treba i da se testira lol...)
@@ -109,6 +114,9 @@ class Meet:
 			meets_dict = convert_sqlite3rows_to_dict(meets)
 
 			return meets_dict
+
+	def get_all_meets(self):
+		pass
 
 	# i ovde dodati broj zauzetih mesta...
 	def get_all_created_meets(self, user_id: int):

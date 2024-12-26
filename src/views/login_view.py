@@ -3,7 +3,8 @@ import flet as ft, asyncio
 from flet_navigator import PageData
 from controllers.login_controller import handle_login
 from components.loader import Loader
-from components.responsive_container import ResponsiveContainer
+from components.responsive_card import ResponsiveForm
+from components.snack_bar import SnackBar
 
 def login_screen(page_data: PageData) -> None:  
 	page = page_data.page
@@ -18,27 +19,17 @@ def login_screen(page_data: PageData) -> None:
 			
 			if logged_in:
 				# login is successful
-				success_snack = ft.SnackBar(ft.Text('Uspešna prijava!'), duration=2000, open=True)
-				page.overlay.append(success_snack)
+				page.overlay.append(SnackBar('Uspešna prijava!', duration=2500))
 				page_data.navigate('meets')
 
 			else: 
 				# login is not succesful
-				error_snack = ft.SnackBar(
-					ft.Column(
-						[
-							ft.Text('Greška prilikom prijave', weight=ft.FontWeight.BOLD), 
-							ft.Text('Uneta je netačna e-adresa i/ili lozinka')
-						]
-					),
-					duration=2000,
-					open=True
-				)
 				email_tf.border_color = ft.Colors.RED_300
 				password_tf.border_color = ft.Colors.RED_300
-				page.overlay.append(error_snack)
+				page.overlay.append(SnackBar('Greška prilikom prijave', 'Uneta je netačna e-adresa i/ili lozinka', snackbar_type='ERROR', duration=2500))
+				page.update()
 
-			page.update()
+			
 	
 	email_tf = ft.TextField(
 		label='E-adresa',
@@ -54,28 +45,28 @@ def login_screen(page_data: PageData) -> None:
 		autofill_hints=ft.AutofillHint.PASSWORD
 	)
 
-	container = ft.Container(
-		ft.Column(
-			[
+	container = ResponsiveForm(
+		controls=[
 				ft.Row(
 					[ft.Text("Prijava", theme_style=ft.TextThemeStyle.HEADLINE_MEDIUM)],
 					alignment=ft.MainAxisAlignment.CENTER,
 				),
 				ft.Column(
-					[ email_tf, password_tf ]
-				),
-    
-				ResponsiveContainer(
 					[ 
+						email_tf,
+						password_tf,
+					]
+				),
+				ft.Row(
+					[
 						ft.ElevatedButton(
 							'Prijavi se',
 							expand=True,
 							height=50,
 							on_click = lambda _: asyncio.run(on_submit()),
 						) 
-					],
+					]
 				),
-
 				ft.Row(
 					[ 
 						ft.TextButton(
@@ -85,7 +76,6 @@ def login_screen(page_data: PageData) -> None:
 					]
 				)
 			]
-		)
 	)
 
-	return container
+	return ft.SafeArea(container)

@@ -8,8 +8,8 @@ def handle_register(email: str, name: str, password: str, faculty: str) -> bool:
 
 	if email == '':
 		errors.append({ 'field': 'email', 'message': 'E-adresa je obavezno polje' })
-
-	if re.match(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$', email) is None:
+	
+	elif re.match(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$', email) is None:
 		errors.append({ 'field': 'email', 'message': 'Unešena je nevalidna e-adresa' })
 
 	if name == '':
@@ -33,9 +33,9 @@ def handle_register(email: str, name: str, password: str, faculty: str) -> bool:
 			'errors': errors
 		}
 	
-	registered_successfully = user_model.create_user(name, email, password, faculty)
+	registered_successfully = user_model.create_user(name, email, password, faculty_res)
 	
-	if registered_successfully == False:
+	if not registered_successfully:
 		errors.append({ 'field': 'email', 'message': 'Ova e-adresa je već u upotrebi' })
 
 	return {

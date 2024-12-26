@@ -19,11 +19,11 @@ def profile_screen(page_data: PageData):
 		is_admin.controls.append(
 			ft.Button(
 				text="Admin",
-				icon=ft.Icons.ADD,
+				icon=ft.Icons.ADMIN_PANEL_SETTINGS,
 				height=50,
 				elevation=0,
 				expand=True,
-				on_click=lambda _: on_logout()
+				on_click=lambda _: page_data.navigate('admin')
 			)
 		)
 
@@ -57,7 +57,7 @@ def profile_screen(page_data: PageData):
 							[
 								ft.Button(
 									text="Izloguj se",
-									icon=ft.Icons.ADD,
+									icon=ft.Icons.LOGOUT,
 									height=50,
 									elevation=0,
 									expand=True,

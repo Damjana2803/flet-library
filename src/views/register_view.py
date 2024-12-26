@@ -2,7 +2,8 @@ import flet as ft, asyncio
 from flet_navigator import PageData
 from controllers.register_controller import handle_register
 from components.loader import Loader
-from components.responsive_container import ResponsiveContainer
+from components.responsive_card import ResponsiveForm
+from components.snack_bar import SnackBar
 
 def register_screen(page_data: PageData):
 	page = page_data.page
@@ -14,8 +15,7 @@ def register_screen(page_data: PageData):
 		loader.delete_loader()
 
 		if register['success']:
-			success_snack = ft.SnackBar(ft.Text('Uspešna registracija, sada je potrebno prijaviti se!'), open=True)
-			page.overlay.append(success_snack)
+			page.overlay.append(SnackBar('Uspešna registracija', 'Premeštam te na stranicu za prijavu...', duration=2500))
 			page_data.navigate_homepage()
 
 		else: 
@@ -31,20 +31,14 @@ def register_screen(page_data: PageData):
         'faculty': faculty
     	}
 
-			errors = ft.Column(
-				controls = [
-					ft.Text('Greška prilikom registracije', weight=ft.FontWeight.BOLD),
-				]
-			)
+			error_snack = SnackBar('Greška prilikom registracije', snackbar_type='ERROR')
 			
 			for error in register['errors']:
 				if error['field'] in field_controls:
 					field_controls[error['field']].border_color = ft.Colors.RED_300
 
-				errors.controls.append(ft.Text(f"• {error['message']}"))
+				error_snack.append_error(error['message'])
 				
-			
-			error_snack = ft.SnackBar(errors, open=True)
 			page.overlay.append(error_snack)
 	
 		page.update()
@@ -87,31 +81,30 @@ def register_screen(page_data: PageData):
 	)
 
 	container = ft.SafeArea(
-		ft.Container(
-			ft.Column(
-				[
-					ft.Row(
-						[ft.Text('Registracija', theme_style=ft.TextThemeStyle.HEADLINE_MEDIUM)],
-						alignment=ft.MainAxisAlignment.CENTER,
-					),
-					ft.Column(
-						[ email_tf, password_tf, name_tf, faculty ]
-					),
-					ResponsiveContainer(
-						[ 
-							ft.ElevatedButton(
-								'Registruj se', 
-								on_click = lambda _: asyncio.run(on_submit()),
-								height=50,
-								expand=True
-							) 
-						],
-					),
-					ft.Row(
-						[ ft.TextButton('Imaš nalog? Prijavi se', on_click=lambda _: page_data.navigate('/')) ]
-					)
-				]
-			)
+		ResponsiveForm(
+			[
+				ft.Row(
+					[ft.Text('Registracija', theme_style=ft.TextThemeStyle.HEADLINE_MEDIUM)],
+					alignment=ft.MainAxisAlignment.CENTER,
+				),
+				ft.Column(
+					[ email_tf, password_tf, name_tf, faculty ]
+				),
+				ft.Row(
+					[ 
+						ft.ElevatedButton(
+							'Registruj se', 
+							on_click = lambda _: asyncio.run(on_submit()),
+							height=50,
+							expand=True
+						) 
+					],
+				),
+				ft.Row(
+					[ ft.TextButton('Imaš nalog? Prijavi se', on_click=lambda _: page_data.navigate('/')) ]
+				)
+			]
 		)
 	)
+
 	return container
