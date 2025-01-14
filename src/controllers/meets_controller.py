@@ -1,6 +1,7 @@
 from utils.global_state import global_state
 from models.meet import Meet
 from models.usermeet import UserMeet
+from datetime import datetime
 
 async def handle_create_meet(title: str, description: str, field: str, location: str, start_date, start_time, users_limit: int):	
 	user = global_state.get_user()
@@ -17,7 +18,12 @@ async def handle_create_meet(title: str, description: str, field: str, location:
 	if location == '':
 		errors.append({ 'field': 'location', 'message': 'Lokacija je obavezna' })
 
-	# TODO: add start date and start time check here... (too lazy for it now...)
+	try:
+		combined_datetime = datetime.strptime(f"{start_date} {start_time}", "%Y-%m-%d %H:%M")
+		if combined_datetime < datetime.now():
+			errors.append({ 'field': 'date', 'message': 'Datum i vreme ne mogu biti u prošlosti' })
+	except ValueError:
+		errors.append({ 'field': 'date', 'message': 'Neispravan format datuma ili vremena' })
 
 	if users_limit == '' or int(users_limit) == 0:
 		errors.append({ 'field': 'limit', 'message': 'Mora postojati bar jedno slobodno mesto' })
@@ -44,13 +50,18 @@ async def handle_get_all_valid_meets():
 
 	return meet_model.get_all_valid_meets(user_id)
 
+# TODO: change this to support retrieving other parameters (comment and rating...)
 async def handle_check_if_user_is_signed(user_id: int, meet_id: int):
 	user_meet_model = UserMeet()
 
 	return user_meet_model.check_if_user_is_signed(user_id, meet_id)
 
-async def handle_toggle_join_user(user_id: int, meet_id: int):
+async def handle_get_users_in_meet(meet_id: int):
+	user_meet_model = UserMeet()
 
+	return user_meet_model.get_users_in_meet( meet_id)
+
+async def handle_toggle_join_user(user_id: int, meet_id: int):
 	user_meet_model = UserMeet()
 
 	return user_meet_model.toggle_join_user(user_id, meet_id)
@@ -58,4 +69,22 @@ async def handle_toggle_join_user(user_id: int, meet_id: int):
 async def handle_get_all_created_meets(user_id: int):
 	meet_model = Meet()
 
-	return meet_model.get_all_created_meets(user_id)
+	created_meets = meet_model.get_all_created_meets(user_id)
+
+	if len(created_meets) == 1:
+		if created_meets[0]['meets_id'] is None:
+			return []
+
+	return created_meets
+
+async def handle_get_all_joined_meets(user_id: int):
+	user_meet_model = UserMeet()
+	
+	return user_meet_model.get_all_joined_meets(user_id)
+
+async def handle_add_comment(user_id: int, meet_id: int, rating: int, comment: str):
+	user_meet_model = UserMeet()
+
+	success = user_meet_model.add_comment(user_id, meet_id, rating, comment)
+
+	return success

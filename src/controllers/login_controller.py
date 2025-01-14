@@ -6,7 +6,7 @@ def handle_login(email: str, password: str):
 
 	user = user_model.login_user(email.lower(), password)
 	
-	if(user['logged']):
+	if user['logged']:
 		global_state.set_user(user)
 		
 	return user['logged']

@@ -1,19 +1,21 @@
-import flet as ft, asyncio
+import flet as ft, asyncio, datetime
 from flet_navigator import PageData
-from components.loader import Loader
 from utils.global_state import global_state
-from controllers.meets_controller import handle_get_all_created_meets
-from components.meet_card import MeetCard
+from controllers.meets_controller import handle_get_all_joined_meets
+from components.loader import Loader
 from components.responsive_container import ResponsiveContainer
+from components.meet_card import MeetCard
 from components.tab_bar import TabBar
 
-def meets_created_screen(page_data: PageData):
+
+def meets_joined_screen(page_data: PageData):
 	global meets_data
 	user_id = global_state.get_user()['id']
 	page = page_data.page
 	page.scroll = ft.ScrollMode.AUTO
 	page.horizontal_alignment = 'center'
 	
+
 	column = ft.Column(
 		horizontal_alignment='center',
 		controls=[
@@ -63,15 +65,14 @@ def meets_created_screen(page_data: PageData):
 			]
 		)
 	)
-	
 
 	async def on_mount():
 		global meets_data 
 		loader = Loader(page)
 		asyncio.create_task(loader.create_loader())
-		meets_data = await handle_get_all_created_meets(user_id)
+		meets_data = await handle_get_all_joined_meets(user_id)
 		loader.delete_loader()
-		
+
 		for meet in meets_data:
 			row.controls.append(
 				ft.Column(
@@ -82,6 +83,7 @@ def meets_created_screen(page_data: PageData):
 			)
 
 			page.update()
+	
 
 	asyncio.run(on_mount())
 	return ft.SafeArea(container)

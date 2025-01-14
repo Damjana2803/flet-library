@@ -25,11 +25,11 @@ def register_screen(page_data: PageData):
 			faculty.border_color = None
 
 			field_controls = {
-        'email': email_tf,
-        'name': name_tf,
-        'password': password_tf,
-        'faculty': faculty
-    	}
+				'email': email_tf,
+				'name': name_tf,
+				'password': password_tf,
+				'faculty': faculty
+			}
 
 			error_snack = SnackBar('Greška prilikom registracije', snackbar_type='ERROR')
 			
@@ -60,7 +60,8 @@ def register_screen(page_data: PageData):
 		label='Lozinka',
 		password=True,
 		can_reveal_password=True,
-		autofill_hints=ft.AutofillHint.NEW_PASSWORD
+		autofill_hints=ft.AutofillHint.NEW_PASSWORD,
+		helper_text='Najmanje 6 karaktera'
 	)
 	
 	faculty = ft.Dropdown(

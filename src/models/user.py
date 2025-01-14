@@ -4,7 +4,6 @@ from dotenv import load_dotenv
 from models.faculty import Faculty
 from utils.helper_func import convert_sqlite3rows_to_dict
 
-
 load_dotenv()
 
 class User: 
@@ -45,7 +44,7 @@ class User:
 
 			user = cursor.fetchone()
 			
-			if(user is None):
+			if user is None:
 				return {
 					'found': False
 				}
@@ -68,7 +67,7 @@ class User:
 
 			res = cursor.fetchone()
 
-			if(res is None):
+			if res is None:
 				return {
 					'logged': False
 				}
@@ -90,6 +89,7 @@ class User:
 					users.id AS id,
 					users.name AS name,
 					users.email AS email,
+					users.is_admin AS is_admin,
 					faculties.name AS faculty
 				FROM users
 				LEFT JOIN faculties
@@ -99,6 +99,38 @@ class User:
 			users = cursor.fetchall()
 
 			return convert_sqlite3rows_to_dict(users)
+
+	def edit_user(self, user_id: int, name: str, faculty: int):
+		with self._connect() as conn:
+			cursor = conn.cursor()
+
+			cursor.execute('''
+				UPDATE users
+				SET name = ?, faculty = ?
+				WHERE id = ?
+			''', (name, faculty, user_id))
+
+			conn.commit()
+
+			return True
+		
+		return False
+
+	
+	def delete_user(self, user_id: int):
+		with self._connect() as conn:
+			cursor = conn.cursor()
+
+			cursor.execute('''
+				DELETE FROM users
+				WHERE id = ?
+			''', (user_id, ))
+
+			conn.commit()
+
+			return True
+
+		return False
 
 	def _hash_password(self, password: str) -> str:
 		return sha256(password.encode('utf-8')).hexdigest()
@@ -111,7 +143,7 @@ class User:
 				cursor.execute('SELECT * FROM users WHERE id = ?', (id, ))
 				res = cursor.fetchone()
 
-				if(res is None):
+				if res is None:
 					break
 				else:
 					id = random.randint(int_from, int_to)

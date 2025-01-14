@@ -58,7 +58,7 @@ class Session():
 
 			session = cursor.fetchone()	
 			
-			if(session is None):
+			if session is None:
 				print("Session is not valid...")
 				return {
 					'found': False
@@ -96,7 +96,7 @@ class Session():
 				cursor.execute('SELECT * FROM sessions WHERE id = ?', (id, ))
 				res = cursor.fetchone()
 
-				if(res is None):
+				if res is None:
 					break
 				else:
 					id = random.randint(int_from, int_to)

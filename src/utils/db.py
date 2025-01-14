@@ -89,7 +89,7 @@ def db_init():
 		cursor.execute("INSERT INTO state (id, already_filled) VALUES(1, 0)")
 		conn.commit()
 
-	if(res is None or res[0] == 0):
+	if res is None or res[0] == 0:
 		data = [
 			(1, 'Ekonomski fakultet'), 
 			(2, 'Medicinski fakultet'),

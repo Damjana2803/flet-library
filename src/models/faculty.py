@@ -17,4 +17,7 @@ class Faculty:
 			cursor.execute('SELECT id FROM faculties WHERE name = ?', (name, ))
 			res = cursor.fetchone()
 
-			return res
+			if res:
+				return res[0]
+			
+			return False

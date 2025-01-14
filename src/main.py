@@ -7,9 +7,10 @@ from views.profile_view import profile_screen
 from views.meets.meets_view import meets_screen
 from views.meets.meets_create_view import meets_create_screen
 from views.meets.meets_show_view import meets_show_screen
-from views.meets.meets_created_view import meets_created_view
+from views.meets.meets_created_view import meets_created_screen
 from views.admin.admin_users_view import admin_users_screen
 from views.admin.admin_meets_view import admin_meets_screen
+from views.meets.meets_joined_view import meets_joined_screen
 
 from utils.db import db_init
 from utils.route_guard import guests_guard, auth_guard, admin_guard
@@ -28,7 +29,11 @@ def register(page_data: PageData) -> None:
 # PROTECTED ROUTES
 @route
 def meets_created(page_data: PageData) -> None:
-	auth_guard(page_data, 'Athena | Moji Simpozijumi', meets_created_view)
+	auth_guard(page_data, 'Athena | Moji Simpozijumi', meets_created_screen)
+
+@route
+def meets_joined(page_data: PageData) -> None:
+	auth_guard(page_data, 'Athena | Pridruženi Simpozijumi', meets_joined_screen)
 
 @route
 def meets(page_data: PageData) -> None:
@@ -49,11 +54,11 @@ def profile(page_data: PageData) -> None:
 # ADMIN ROUTES
 @route
 def admin(page_data: PageData) -> None:
-	admin_guard(page_data, 'Athena | Admin Panel - Korisnici', admin_users_screen)
+	admin_guard(page_data, 'Athena Admin | Korisnici', admin_users_screen)
 
 @route 
 def admin_meets(page_data: PageData) -> None:
-	admin_guard(page_data, 'Athena | Admin Panel - Simpozijumi', admin_meets_screen)
+	admin_guard(page_data, 'Athena Admin | Simpozijumi', admin_meets_screen)
 
 
 
