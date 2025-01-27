@@ -42,7 +42,8 @@ def login_screen(page_data: PageData) -> None:
 		password=True,
 		can_reveal_password=True,
 		prefix_icon=ft.Icons.LOCK,
-		autofill_hints=ft.AutofillHint.PASSWORD
+		autofill_hints=ft.AutofillHint.PASSWORD,
+		on_submit=lambda _: asyncio.run(on_submit())
 	)
 
 	container = ResponsiveForm(

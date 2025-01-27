@@ -9,15 +9,15 @@ def MeetCard(meet, page_data: PageData):
 		# bgcolor=ft.Colors.RED,
 		controls=[
 			ft.Container(
-				bgcolor=ft.Colors.BLACK,
+				bgcolor='#191C20',
 				content=ft.Column(
 					expand=True,
 					controls=(
 						[
 							ft.Container(
+								bgcolor='#202328',
 								padding=5,
 								border_radius=5,
-								bgcolor=ft.Colors.GREY_900,
 								content=ft.Column(
 									[
 										ft.Container(
@@ -85,7 +85,7 @@ def MeetShowCard(meet, page_data: PageData):
 	meet_start_date = datetime.datetime.strptime(meet['meets_start_date'], "%Y-%m-%d").strftime("%d.%m.%Y.")
 
 	return ft.Container(
-		bgcolor=ft.Colors.BLACK,
+		bgcolor='#191C20',
 		content=ft.Column(
 			expand=True,
 			controls=[
