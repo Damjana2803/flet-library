@@ -23,6 +23,8 @@ Install pip packages
 pip install -r "requirements.txt"
 ```
 
+Move contents from `.env.example` to `.env`
+
 Run flet app 
 ```sh
 flet run main.py
