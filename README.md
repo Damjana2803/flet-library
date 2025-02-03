@@ -1,6 +1,6 @@
 # Flet Athena
 
-Application built in [Flet](https://flet.dev) where students can schedule study meetups in Serbian language.
+Application built in [Flet](https://flet.dev) where students can schedule study meetups in the Serbian language.
 
 ### How to run?
 
