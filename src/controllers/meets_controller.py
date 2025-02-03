@@ -42,13 +42,13 @@ async def handle_get_meet(id: int):
 	meet = meet_model.get_meet_by_id(id)
 	return meet
 
-async def handle_get_all_valid_meets():
+async def handle_get_all_valid_meets(search: str):
 	user = global_state.get_user()
 	user_id = user['id']
 	
 	meet_model = Meet()
 
-	return meet_model.get_all_valid_meets(user_id)
+	return meet_model.get_all_valid_meets(user_id, search)
 
 # TODO: change this to support retrieving other parameters (comment and rating...)
 async def handle_check_if_user_is_signed(user_id: int, meet_id: int):
@@ -66,10 +66,10 @@ async def handle_toggle_join_user(user_id: int, meet_id: int):
 
 	return user_meet_model.toggle_join_user(user_id, meet_id)
 
-async def handle_get_all_created_meets(user_id: int):
+async def handle_get_all_created_meets(user_id: int, search: str):
 	meet_model = Meet()
 
-	created_meets = meet_model.get_all_created_meets(user_id)
+	created_meets = meet_model.get_all_created_meets(user_id, search)
 
 	if len(created_meets) == 1:
 		if created_meets[0]['meets_id'] is None:

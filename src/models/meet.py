@@ -79,13 +79,13 @@ class Meet:
 			
 			return converted_meet
 
-	def get_all_valid_meets(self, user_id: int):
+	def get_all_valid_meets(self, user_id: int, search = ''):
 		with self._connect() as conn:
 			conn.row_factory = sqlite3.Row
 			cursor = conn.cursor()
 
-			cursor.execute('''
-				SELECT
+			base_query = """
+			SELECT
 					users.id AS users_id,
 					users.name AS users_name,
 					faculties.name AS faculty,
@@ -99,17 +99,28 @@ class Meet:
 					meets.users_limit AS meets_users_limit,
 					meets.created_by AS meets_created_by,
 					COUNT(users_meets.users_id) AS user_count
-				FROM meets
-				INNER JOIN users
-				ON users.id = meets.created_by
-				LEFT JOIN faculties
-				ON users.faculty_id = faculties.id
-				LEFT JOIN users_meets 
-				ON users_meets.meets_id = meets.id
-				WHERE CURRENT_TIMESTAMP < DATETIME(DATE(start_date) || ' ' || TIME(start_time))
-				AND meets.created_by != ?
-				
-				GROUP BY 
+			FROM meets
+			INNER JOIN users
+					ON users.id = meets.created_by
+			LEFT JOIN faculties
+					ON users.faculty_id = faculties.id
+			LEFT JOIN users_meets 
+					ON users_meets.meets_id = meets.id
+			WHERE CURRENT_TIMESTAMP < DATETIME(DATE(start_date) || ' ' || TIME(start_time))
+					AND meets.created_by != ?
+			"""
+
+			# Add the LIKE clause only if the search term is not empty
+			if search:
+				query = base_query + " AND meets.title LIKE ?"
+				params = (user_id, f'%{search}%')
+			else:
+				query = base_query
+				params = (user_id,)
+
+			# Add the GROUP BY and HAVING clauses
+			query += """
+			GROUP BY 
 					meets.id,
 					users.id,
 					faculties.name,
@@ -121,8 +132,10 @@ class Meet:
 					meets.start_time,
 					meets.users_limit,
 					meets.created_by
-				HAVING user_count < meets_users_limit
-			''', (user_id, ))
+			HAVING user_count < meets_users_limit
+			"""
+
+			cursor.execute(query, params)
 
 			meets = cursor.fetchall()
 			
@@ -191,38 +204,53 @@ class Meet:
 		
 		return False
 	
-	def get_all_created_meets(self, user_id: int):
+	def get_all_created_meets(self, user_id: int, search: str = ''):
 		with self._connect() as conn:
 			conn.row_factory = sqlite3.Row
 			cursor = conn.cursor()
-			cursor.execute('''
-				SELECT 
-					meets.id AS meets_id,
-					meets.title AS meets_title,
-					meets.description AS meets_description,
-					meets.field AS meets_field,
-					meets.location AS meets_location, 
-					meets.start_date AS meets_start_date,
-					meets.start_time AS meets_start_time,
-					meets.users_limit AS meets_users_limit,
-					meets.created_by AS meets_created_by,
-					COUNT(users_meets.users_id) AS user_count
-				FROM meets
-				LEFT JOIN users_meets
+			base_query = '''
+			SELECT 
+				meets.id AS meets_id,
+				meets.title AS meets_title,
+				meets.description AS meets_description,
+				meets.field AS meets_field,
+				meets.location AS meets_location, 
+				meets.start_date AS meets_start_date,
+				meets.start_time AS meets_start_time,
+				meets.users_limit AS meets_users_limit,
+				meets.created_by AS meets_created_by,
+				COUNT(users_meets.users_id) AS user_count
+			FROM meets
+			LEFT JOIN users_meets
 				ON users_meets.meets_id = meets.id
-				WHERE meets.created_by = ?
-				GROUP BY 
-					meets.id,
-					meets.title,
-					meets.description,
-					meets.field,
-					meets.location, 
-					meets.start_date,
-					meets.start_time,
-					meets.users_limit,
-					meets.created_by
-				ORDER BY meets.start_date DESC
-		''', (user_id, ))
+			WHERE meets.created_by = ?
+			'''
+
+			# Add the LIKE clause only if the search term is not empty
+			if search:
+				query = base_query + " AND meets.title LIKE ?"
+				params = (user_id, f'%{search}%')
+			else:
+				query = base_query
+				params = (user_id,)
+
+			# Add the GROUP BY and ORDER BY clauses
+			query += '''
+			GROUP BY 
+				meets.id,
+				meets.title,
+				meets.description,
+				meets.field,
+				meets.location, 
+				meets.start_date,
+				meets.start_time,
+				meets.users_limit,
+				meets.created_by
+			ORDER BY meets.start_date DESC
+			'''
+
+			# Execute the query with the parameters
+			cursor.execute(query, params)
 			
 			meets = cursor.fetchall()
 			meets_dict = convert_sqlite3rows_to_dict(meets)

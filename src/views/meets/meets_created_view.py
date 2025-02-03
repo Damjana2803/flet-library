@@ -13,6 +13,18 @@ def meets_created_screen(page_data: PageData):
 	page = page_data.page
 	page.scroll = ft.ScrollMode.AUTO
 	page.horizontal_alignment = 'center'
+
+	def handle_search():
+		asyncio.run(on_mount())
+		page.update()
+
+	search_bar = ft.SearchBar(
+		bar_hint_text="Traži Simpozijume...",
+		bar_leading=ft.IconButton(icon=ft.Icons.SEARCH),
+		expand=True,
+		height=50,
+		on_submit=lambda _: handle_search()
+	)
 	
 	column = ft.Column(
 		horizontal_alignment='center',
@@ -21,12 +33,7 @@ def meets_created_screen(page_data: PageData):
 				col={'md': 6, 'lg': 4},
 				alignment=ft.MainAxisAlignment.END,
 				controls=[
-					ft.SearchBar(
-						bar_hint_text="Traži Simpozijume...",
-						bar_leading=ft.IconButton(icon=ft.Icons.SEARCH),
-						expand=True,
-						height=50,
-					)
+					search_bar
 				]
 			),
 			ResponsiveContainer(
@@ -69,9 +76,9 @@ def meets_created_screen(page_data: PageData):
 		global meets_data 
 		loader = Loader(page)
 		asyncio.create_task(loader.create_loader())
-		meets_data = await handle_get_all_created_meets(user_id)
+		meets_data = await handle_get_all_created_meets(user_id, search_bar.value)
 		loader.delete_loader()
-		
+		row.controls = []
 		for meet in meets_data:
 			row.controls.append(
 				ft.Column(
