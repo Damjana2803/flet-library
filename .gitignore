@@ -166,6 +166,7 @@ todo.txt
 
 # Database
 ./athena.db
+*.db
 
 # VSCODE
 .vscode/
