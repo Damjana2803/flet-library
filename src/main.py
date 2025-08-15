@@ -1,16 +1,23 @@
 import flet as ft
 from flet_navigator import PublicFletNavigator, PageData, route
 
+# Import library views
 from views.login_view import login_screen
 from views.register_view import register_screen
-from views.profile_view import profile_screen
-from views.meets.meets_view import meets_screen
-from views.meets.meets_create_view import meets_create_screen
-from views.meets.meets_show_view import meets_show_screen
-from views.meets.meets_created_view import meets_created_screen
-from views.admin.admin_users_view import admin_users_screen
-from views.admin.admin_meets_view import admin_meets_screen
-from views.meets.meets_joined_view import meets_joined_screen
+
+# Import admin views
+from views.admin.admin_dashboard import admin_dashboard as admin_dashboard_content
+from views.admin.admin_books import admin_books as admin_books_content
+from views.admin.admin_members import admin_members as admin_members_content
+from views.admin.admin_loans import admin_loans as admin_loans_content
+from views.admin.admin_statistics import admin_statistics as admin_statistics_content
+
+# Import member views
+from views.member_dashboard import member_dashboard as member_dashboard_content
+from views.book_search import book_search as book_search_content
+from views.my_loans import my_loans as my_loans_content
+from views.my_reservations import my_reservations as my_reservations_content
+from views.member_profile import member_profile as member_profile_content
 
 from utils.db import db_init
 from utils.route_guard import guests_guard, auth_guard, admin_guard
@@ -20,46 +27,58 @@ db_init()
 # GUEST ROUTES
 @route('/')
 def main(page_data: PageData) -> None:
-	guests_guard(page_data, 'Athena | Prijava', login_screen)
+	guests_guard(page_data, 'Biblioteka | Prijava', login_screen)
+
+@route
+def login(page_data: PageData) -> None:
+	guests_guard(page_data, 'Biblioteka | Prijava', login_screen)
 
 @route
 def register(page_data: PageData) -> None:
-	guests_guard(page_data, 'Athena | Registracija', register_screen)
-
-# PROTECTED ROUTES
-@route
-def meets_created(page_data: PageData) -> None:
-	auth_guard(page_data, 'Athena | Moji Simpozijumi', meets_created_screen)
-
-@route
-def meets_joined(page_data: PageData) -> None:
-	auth_guard(page_data, 'Athena | Pridruženi Simpozijumi', meets_joined_screen)
-
-@route
-def meets(page_data: PageData) -> None:
-	auth_guard(page_data, 'Athena | Simpozijumi', meets_screen)
-  
-@route 
-def meets_create(page_data: PageData) -> None:
-	auth_guard(page_data, 'Athena | Novi Simpozijum', meets_create_screen)
-
-@route
-def meets_show(page_data: PageData) -> None:
-	auth_guard(page_data, 'Athena | Simpozijum', meets_show_screen)
-	
-@route
-def profile(page_data: PageData) -> None:
-	auth_guard(page_data, 'Athena | Profil', profile_screen)
+	guests_guard(page_data, 'Biblioteka | Registracija člana', register_screen)
 
 # ADMIN ROUTES
 @route
-def admin(page_data: PageData) -> None:
-	admin_guard(page_data, 'Athena Admin | Korisnici', admin_users_screen)
+def admin_dashboard(page_data: PageData) -> None:
+	admin_guard(page_data, 'Biblioteka Admin | Dashboard', lambda pd: admin_dashboard_content(pd))
 
-@route 
-def admin_meets(page_data: PageData) -> None:
-	admin_guard(page_data, 'Athena Admin | Simpozijumi', admin_meets_screen)
+@route
+def admin_books(page_data: PageData) -> None:
+	admin_guard(page_data, 'Biblioteka Admin | Upravljanje knjigama', lambda pd: admin_books_content(pd))
 
+@route
+def admin_members(page_data: PageData) -> None:
+	admin_guard(page_data, 'Biblioteka Admin | Upravljanje članovima', lambda pd: admin_members_content(pd))
 
+@route
+def admin_loans(page_data: PageData) -> None:
+	admin_guard(page_data, 'Biblioteka Admin | Iznajmljivanje', lambda pd: admin_loans_content(pd))
 
-ft.app(lambda page: PublicFletNavigator(page).render(page))
+@route
+def admin_statistics(page_data: PageData) -> None:
+	admin_guard(page_data, 'Biblioteka Admin | Statistike', lambda pd: admin_statistics_content(pd))
+
+# MEMBER ROUTES
+@route
+def member_dashboard(page_data: PageData) -> None:
+	auth_guard(page_data, 'Biblioteka | Dashboard', lambda pd: member_dashboard_content(pd))
+
+@route
+def book_search(page_data: PageData) -> None:
+	auth_guard(page_data, 'Biblioteka | Pretraga knjiga', lambda pd: book_search_content(pd))
+
+@route
+def my_loans(page_data: PageData) -> None:
+	auth_guard(page_data, 'Biblioteka | Moje iznajmljene knjige', lambda pd: my_loans_content(pd))
+
+@route
+def my_reservations(page_data: PageData) -> None:
+	auth_guard(page_data, 'Biblioteka | Moje rezervacije', lambda pd: my_reservations_content(pd))
+
+@route
+def member_profile(page_data: PageData) -> None:
+	auth_guard(page_data, 'Biblioteka | Moj profil', lambda pd: member_profile_content(pd))
+
+ft.app(
+    lambda page: PublicFletNavigator(page).render(page)
+)

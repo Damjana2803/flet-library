@@ -3,8 +3,78 @@ from hashlib import sha256
 from dotenv import load_dotenv
 from models.faculty import Faculty
 from utils.helper_func import convert_sqlite3rows_to_dict
+from dataclasses import dataclass
+from datetime import datetime
+from typing import Optional
 
 load_dotenv()
+
+@dataclass
+class Admin:
+    id: Optional[int] = None
+    username: str = ""
+    email: str = ""
+    password_hash: str = ""
+    first_name: str = ""
+    last_name: str = ""
+    role: str = "admin"  # admin, librarian, assistant
+    permissions: list = None
+    is_active: bool = True
+    last_login: datetime = None
+    created_at: datetime = None
+    updated_at: datetime = None
+    
+    def __post_init__(self):
+        if self.created_at is None:
+            self.created_at = datetime.now()
+        if self.updated_at is None:
+            self.updated_at = datetime.now()
+        if self.permissions is None:
+            self.permissions = ["books", "members", "loans", "reports"]
+    
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'username': self.username,
+            'email': self.email,
+            'password_hash': self.password_hash,
+            'first_name': self.first_name,
+            'last_name': self.last_name,
+            'role': self.role,
+            'permissions': self.permissions,
+            'is_active': self.is_active,
+            'last_login': self.last_login.isoformat() if self.last_login else None,
+            'created_at': self.created_at.isoformat() if self.created_at else None,
+            'updated_at': self.updated_at.isoformat() if self.updated_at else None
+        }
+    
+    @classmethod
+    def from_dict(cls, data: dict):
+        return cls(
+            id=data.get('id'),
+            username=data.get('username', ''),
+            email=data.get('email', ''),
+            password_hash=data.get('password_hash', ''),
+            first_name=data.get('first_name', ''),
+            last_name=data.get('last_name', ''),
+            role=data.get('role', 'admin'),
+            permissions=data.get('permissions', ["books", "members", "loans", "reports"]),
+            is_active=data.get('is_active', True),
+            last_login=datetime.fromisoformat(data['last_login']) if data.get('last_login') else None,
+            created_at=datetime.fromisoformat(data['created_at']) if data.get('created_at') else None,
+            updated_at=datetime.fromisoformat(data['updated_at']) if data.get('updated_at') else None
+        )
+    
+    @property
+    def full_name(self):
+        return f"{self.first_name} {self.last_name}"
+    
+    def has_permission(self, permission: str) -> bool:
+        return permission in self.permissions
+    
+    def update_last_login(self):
+        self.last_login = datetime.now()
+        self.updated_at = datetime.now()
 
 class User: 
 	def __init__(self, db_path = os.getenv('DB_NAME')):

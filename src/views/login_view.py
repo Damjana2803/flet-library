@@ -14,16 +14,28 @@ def login_screen(page_data: PageData) -> None:
 		if (len(email_tf.value) != 0 and len(password_tf.value) != 0):
 			loader = Loader(page)
 			asyncio.create_task(loader.create_loader())
-			logged_in = handle_login(email_tf.value, password_tf.value)
+			
+			# Determine login type based on radio button selection
+			login_type = "member"  # Default to member login
+			if admin_radio.value == "admin":
+				login_type = "admin"
+			
+			logged_in, user_data = handle_login(email_tf.value, password_tf.value, login_type)
 			loader.delete_loader()
 			
 			if logged_in:
 				# login is successful
-				page.overlay.append(SnackBar('Uspešna prijava!', duration=2500))
-				page_data.navigate('meets')
+				user_type = "Administrator" if login_type == "admin" else "Član"
+				page.overlay.append(SnackBar(f'Uspešna prijava kao {user_type}!', duration=2500))
+				
+				# Navigate based on user type
+				if login_type == "admin":
+					page_data.navigate('admin_dashboard')
+				else:
+					page_data.navigate('member_dashboard')
 
 			else: 
-				# login is not succesful
+				# login is not successful
 				email_tf.border_color = ft.Colors.RED_300
 				password_tf.border_color = ft.Colors.RED_300
 				page.overlay.append(SnackBar('Greška prilikom prijave', 'Uneta je netačna e-adresa i/ili lozinka', snackbar_type='ERROR', duration=2500))
@@ -37,6 +49,9 @@ def login_screen(page_data: PageData) -> None:
 		keyboard_type=ft.KeyboardType.EMAIL,
 		autofill_hints=ft.AutofillHint.EMAIL
 	)
+	admin_radio = ft.Radio(value="admin", label="Administrator")
+	member_radio = ft.Radio(value="member", label="Član biblioteke")
+	
 	password_tf = ft.TextField(
 		label='Lozinka',
 		password=True,
@@ -49,7 +64,15 @@ def login_screen(page_data: PageData) -> None:
 	container = ResponsiveForm(
 		controls=[
 				ft.Row(
-					[ft.Text("Prijava", theme_style=ft.TextThemeStyle.HEADLINE_MEDIUM)],
+					[ft.Text("Biblioteka - Prijava", theme_style=ft.TextThemeStyle.HEADLINE_MEDIUM)],
+					alignment=ft.MainAxisAlignment.CENTER,
+				),
+				ft.Row(
+					[ft.Text("Izaberite tip korisnika:", size=16)],
+					alignment=ft.MainAxisAlignment.CENTER,
+				),
+				ft.Row(
+					[admin_radio, member_radio],
 					alignment=ft.MainAxisAlignment.CENTER,
 				),
 				ft.Column(
@@ -71,7 +94,7 @@ def login_screen(page_data: PageData) -> None:
 				ft.Row(
 					[ 
 						ft.TextButton(
-							'Nemaš nalog? Registruj se',
+							'Nemaš nalog? Registruj se kao član',
 							on_click=lambda _: page_data.navigate('register'),
 						)
 					]
