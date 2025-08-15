@@ -1,28 +1,85 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
 [project]
-name = "athena"
-version = "0.1.0"
-description = ""
+name = "biblioteka-app"
+version = "1.0.0"
+description = "Aplikacija za upravljanje bibliotečkim fondom"
 readme = "README.md"
 requires-python = ">=3.8"
+license = {text = "MIT"}
+authors = [
+    {name = "Student", email = "student@example.com"},
+]
+keywords = ["flet", "library", "management", "python"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Education",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Topic :: Education",
+    "Topic :: Office/Business",
+]
 dependencies = [
-  "flet==0.25.2"
+    "flet>=0.21.0",
+    "flet-navigator>=0.1.0",
+    "python-dotenv>=1.0.0",
 ]
 
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0.0",
+    "black>=23.0.0",
+    "flake8>=6.0.0",
+]
 
-[tool.flet]
-# org name in reverse domain name notation, e.g. "com.mycompany".
-# Combined with project.name to build bundle ID for iOS and Android apps
-org = "com.mycompany"
+[project.urls]
+Homepage = "https://github.com/student/biblioteka-app"
+Repository = "https://github.com/student/biblioteka-app.git"
+Issues = "https://github.com/student/biblioteka-app/issues"
 
-# project display name that is used as an app title on Android and iOS home screens,
-# shown in window titles and about app dialogs on desktop.
-product = "athena"
+[project.scripts]
+biblioteka = "src.main:main"
 
-# company name to display in about app dialogs
-company = "Jovan Isailovic"
+[tool.black]
+line-length = 88
+target-version = ['py38']
+include = '\.pyi?$'
+extend-exclude = '''
+/(
+  # directories
+  \.eggs
+  | \.git
+  | \.hg
+  | \.mypy_cache
+  | \.tox
+  | \.venv
+  | build
+  | dist
+)/
+'''
 
-# copyright text to display in about app dialogs
-copyright = "Copyright (C) 2024 by Jovan Isailovic"
+[tool.flake8]
+max-line-length = 88
+extend-ignore = ["E203", "W503"]
+exclude = [
+    ".git",
+    "__pycache__",
+    "build",
+    "dist",
+    ".venv",
+    ".eggs",
+    "*.egg",
+]
 
-[tool.flet.app]
-path = "src"
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = "-v --tb=short"
