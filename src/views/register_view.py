@@ -1,83 +1,97 @@
 import flet as ft, asyncio
 from flet_navigator import PageData
-from controllers.register_controller import handle_register
+from controllers.register_controller import handle_member_register
 from components.loader import Loader
 from components.responsive_card import ResponsiveForm
 from components.snack_bar import SnackBar
 
 def register_screen(page_data: PageData):
 	page = page_data.page
+	page.title = "Registracija - Biblioteka"
 	
 	async def on_submit():
 		loader = Loader(page)
 		asyncio.create_task(loader.create_loader())		
-		register = handle_register(email_tf.value, name_tf.value, password_tf.value, faculty.value)
+		
+		register = handle_member_register(
+			full_name=name_tf.value,
+			email=email_tf.value,
+			password=password_tf.value,
+			phone=phone_tf.value,
+			address=address_tf.value,
+			membership_type=membership_type.value
+		)
+		
 		loader.delete_loader()
 
-		if register['success']:
+		if register[0]:  # Success
 			page.overlay.append(SnackBar('Uspešna registracija', 'Premeštam te na stranicu za prijavu...', duration=2500))
-			page_data.navigate_homepage()
+			page_data.navigate('/')
 
 		else: 
+			# Reset border colors
 			email_tf.border_color = None
 			name_tf.border_color = None
 			password_tf.border_color = None
-			faculty.border_color = None
-
-			field_controls = {
-				'email': email_tf,
-				'name': name_tf,
-				'password': password_tf,
-				'faculty': faculty
-			}
+			phone_tf.border_color = None
+			address_tf.border_color = None
+			membership_type.border_color = None
 
 			error_snack = SnackBar('Greška prilikom registracije', snackbar_type='ERROR')
-			
-			for error in register['errors']:
-				if error['field'] in field_controls:
-					field_controls[error['field']].border_color = ft.Colors.RED_300
-
-				error_snack.append_error(error['message'])
-				
+			error_snack.append_error(register[1])  # Error message
 			page.overlay.append(error_snack)
 	
 		page.update()
 
 	email_tf = ft.TextField(
 		prefix_icon=ft.Icons.EMAIL,
-		label='E-adresa',
+		label='E-adresa *',
 		autofill_hints=ft.AutofillHint.EMAIL,
-		keyboard_type=ft.KeyboardType.EMAIL
+		keyboard_type=ft.KeyboardType.EMAIL,
+		hint_text="Unesite vašu e-adresu"
 	)
 
 	name_tf = ft.TextField(
 		prefix_icon=ft.Icons.PERSON,
-		label='Ime i prezime'
+		label='Ime i prezime *',
+		hint_text="Unesite vaše ime i prezime"
 	)
 
 	password_tf = ft.TextField(
 		prefix_icon=ft.Icons.LOCK,
-		label='Lozinka',
+		label='Lozinka *',
 		password=True,
 		can_reveal_password=True,
 		autofill_hints=ft.AutofillHint.NEW_PASSWORD,
-		helper_text='Najmanje 6 karaktera'
+		helper_text='Najmanje 6 karaktera',
+		hint_text="Unesite lozinku"
 	)
 	
-	faculty = ft.Dropdown(
-		prefix_icon=ft.Icons.SCHOOL,
-		label='Fakultet',
-		hint_text='Izaberi tvoj fakultet',
+	phone_tf = ft.TextField(
+		prefix_icon=ft.Icons.PHONE,
+		label='Broj telefona *',
+		keyboard_type=ft.KeyboardType.PHONE,
+		hint_text="Unesite broj telefona"
+	)
+	
+	address_tf = ft.TextField(
+		prefix_icon=ft.Icons.LOCATION_ON,
+		label='Adresa *',
+		multiline=True,
+		min_lines=2,
+		max_lines=3,
+		hint_text="Unesite vašu adresu"
+	)
+	
+	membership_type = ft.Dropdown(
+		prefix_icon=ft.Icons.CARD_MEMBERSHIP,
+		label='Tip članstva *',
+		hint_text='Izaberite tip članstva',
+		helper_text='Studentski: 3 knjige, Regularni: 5 knjiga, Penzionerski: 7 knjiga',
 		options=[
-				ft.dropdown.Option('Ekonomski fakultet'),
-				ft.dropdown.Option('Medicinski fakultet'),
-				ft.dropdown.Option('Poljoprivredni fakultet'),
-				ft.dropdown.Option('Pravni fakultet'),
-				ft.dropdown.Option('Prirodno-matematički fakultet'),
-				ft.dropdown.Option('Učiteljski fakultet'),
-				ft.dropdown.Option('Fakultet za sport i fizičko vaspitanje'),
-				ft.dropdown.Option('Fakultet tehničkih nauka'),
-				ft.dropdown.Option('Filozofski fakultet'),
+			ft.dropdown.Option('student', 'Studentski'),
+			ft.dropdown.Option('regular', 'Regularni'),
+			ft.dropdown.Option('senior', 'Penzionerski'),
 		],
 	)
 
@@ -85,19 +99,33 @@ def register_screen(page_data: PageData):
 		ResponsiveForm(
 			[
 				ft.Row(
-					[ft.Text('Registracija', theme_style=ft.TextThemeStyle.HEADLINE_MEDIUM)],
+					[ft.Text('Registracija člana', theme_style=ft.TextThemeStyle.HEADLINE_MEDIUM)],
 					alignment=ft.MainAxisAlignment.CENTER,
 				),
+				ft.Text(
+					'Postanite član naše biblioteke',
+					theme_style=ft.TextThemeStyle.BODY_MEDIUM,
+					color=ft.colors.GREY_600,
+					text_align=ft.TextAlign.CENTER
+				),
 				ft.Column(
-					[ email_tf, password_tf, name_tf, faculty ]
+					[ 
+						email_tf, 
+						name_tf, 
+						password_tf, 
+						phone_tf, 
+						address_tf, 
+						membership_type 
+					]
 				),
 				ft.Row(
 					[ 
 						ft.ElevatedButton(
-							'Registruj se', 
+							'Registruj se kao član', 
 							on_click = lambda _: asyncio.run(on_submit()),
 							height=50,
-							expand=True
+							expand=True,
+							icon=ft.icons.PERSON_ADD
 						) 
 					],
 				),

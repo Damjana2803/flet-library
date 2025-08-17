@@ -10,18 +10,12 @@ def login_screen(page_data: PageData) -> None:
 	page = page_data.page
 	page.navigation_bar = None
 	
-	async def on_submit():
+	def on_submit():
 		if (len(email_tf.value) != 0 and len(password_tf.value) != 0):
-			loader = Loader(page)
-			asyncio.create_task(loader.create_loader())
-			
 			# Determine login type based on radio button selection
-			login_type = "member"  # Default to member login
-			if admin_radio.value == "admin":
-				login_type = "admin"
+			login_type = user_type_group.value
 			
 			logged_in, user_data = handle_login(email_tf.value, password_tf.value, login_type)
-			loader.delete_loader()
 			
 			if logged_in:
 				# login is successful
@@ -49,8 +43,15 @@ def login_screen(page_data: PageData) -> None:
 		keyboard_type=ft.KeyboardType.EMAIL,
 		autofill_hints=ft.AutofillHint.EMAIL
 	)
-	admin_radio = ft.Radio(value="admin", label="Administrator")
-	member_radio = ft.Radio(value="member", label="Član biblioteke")
+	
+	# Create radio group for user type selection
+	user_type_group = ft.RadioGroup(
+		content=ft.Column([
+			ft.Radio(value="member", label="Član biblioteke"),
+			ft.Radio(value="admin", label="Administrator")
+		]),
+		value="member"  # Default to member
+	)
 	
 	password_tf = ft.TextField(
 		label='Lozinka',
@@ -58,7 +59,7 @@ def login_screen(page_data: PageData) -> None:
 		can_reveal_password=True,
 		prefix_icon=ft.Icons.LOCK,
 		autofill_hints=ft.AutofillHint.PASSWORD,
-		on_submit=lambda _: asyncio.run(on_submit())
+		on_submit=lambda _: on_submit()
 	)
 
 	container = ResponsiveForm(
@@ -72,7 +73,7 @@ def login_screen(page_data: PageData) -> None:
 					alignment=ft.MainAxisAlignment.CENTER,
 				),
 				ft.Row(
-					[admin_radio, member_radio],
+					[user_type_group],
 					alignment=ft.MainAxisAlignment.CENTER,
 				),
 				ft.Column(
@@ -87,7 +88,7 @@ def login_screen(page_data: PageData) -> None:
 							'Prijavi se',
 							expand=True,
 							height=50,
-							on_click = lambda _: asyncio.run(on_submit()),
+							on_click = lambda _: on_submit(),
 						) 
 					]
 				),

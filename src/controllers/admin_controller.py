@@ -67,35 +67,48 @@ def add_book(title: str, author: str, isbn: str, category: str, publication_year
         if total_copies <= 0:
             return False, "Broj primeraka mora biti veći od 0"
         
-        books = global_state.get("books", [])
+        books = global_state.books
         
         # Check if ISBN already exists
-        if any(book.isbn == isbn for book in books):
-            return False, "Knjiga sa ovim ISBN-om već postoji"
+        for book in books:
+            if book.get('isbn', '') == isbn:
+                return False, "Knjiga sa ovim ISBN-om već postoji"
         
-        new_book = Book(
-            id=len(books) + 1,
-            title=title,
-            author=author,
-            isbn=isbn,
-            category=category,
-            publication_year=publication_year,
-            publisher=publisher,
-            description=description,
-            total_copies=total_copies,
-            available_copies=total_copies,
-            location=location,
-            status="available",
-            created_at=datetime.now()
-        )
+        new_book = {
+            'id': len(books) + 1,
+            'title': title,
+            'author': author,
+            'isbn': isbn,
+            'category': category,
+            'publication_year': publication_year,
+            'publisher': publisher,
+            'description': description,
+            'total_copies': total_copies,
+            'available_copies': total_copies,
+            'location': location,
+            'status': "available",
+            'created_at': datetime.now().isoformat()
+        }
         
         books.append(new_book)
-        global_state.set("books", books)
+        global_state.books = books  # Set directly on the object
+        global_state.save_data_to_file()  # Explicitly save to file
         
         return True, f"Knjiga '{title}' je uspešno dodata"
         
     except Exception as e:
         return False, f"Greška prilikom dodavanja knjige: {str(e)}"
+
+def get_all_books():
+    """
+    Get all books from the library
+    Returns: list of books
+    """
+    try:
+        return global_state.books  # Direct access to books list
+    except Exception as e:
+        print(f"Greška pri učitavanju knjiga: {str(e)}")
+        return []
 
 def update_book(book_id: int, title: str, author: str, isbn: str, category: str, 
                 publication_year: int, publisher: str, description: str, 
@@ -105,8 +118,12 @@ def update_book(book_id: int, title: str, author: str, isbn: str, category: str,
     Returns: (success: bool, message: str)
     """
     try:
-        books = global_state.get("books", [])
-        book = next((b for b in books if b.id == book_id), None)
+        books = global_state.books
+        book = None
+        for b in books:
+            if b.get('id') == book_id:
+                book = b
+                break
         
         if not book:
             return False, "Knjiga nije pronađena"
@@ -117,25 +134,36 @@ def update_book(book_id: int, title: str, author: str, isbn: str, category: str,
         if publication_year < 1800 or publication_year > datetime.now().year:
             return False, "Nevažeća godina izdanja"
         
-        if total_copies < (book.total_copies - book.available_copies):
+        # Get book properties safely
+        book_total_copies = book.get('total_copies', 0)
+        book_available_copies = book.get('available_copies', 0)
+        
+        if total_copies < (book_total_copies - book_available_copies):
             return False, "Broj primeraka ne može biti manji od pozajmljenih"
         
         # Check if ISBN already exists (excluding current book)
-        if any(b.isbn == isbn and b.id != book_id for b in books):
-            return False, "Knjiga sa ovim ISBN-om već postoji"
+        for b in books:
+            b_id = b.get('id')
+            b_isbn = b.get('isbn', '')
+            if b_isbn == isbn and b_id != book_id:
+                return False, "Knjiga sa ovim ISBN-om već postoji"
         
         # Update book
-        book.title = title
-        book.author = author
-        book.isbn = isbn
-        book.category = category
-        book.publication_year = publication_year
-        book.publisher = publisher
-        book.description = description
-        book.total_copies = total_copies
-        book.available_copies = total_copies - (book.total_copies - book.available_copies)
-        book.location = location
-        book.updated_at = datetime.now()
+        book['title'] = title
+        book['author'] = author
+        book['isbn'] = isbn
+        book['category'] = category
+        book['publication_year'] = publication_year
+        book['publisher'] = publisher
+        book['description'] = description
+        book['total_copies'] = total_copies
+        book['available_copies'] = total_copies - (book_total_copies - book_available_copies)
+        book['location'] = location
+        book['updated_at'] = datetime.now().isoformat()
+        
+        # Save changes to global state
+        global_state.books = books  # Set directly on the object
+        global_state.save_data_to_file()  # Explicitly save to file
         
         return True, f"Knjiga '{title}' je uspešno ažurirana"
         
@@ -148,30 +176,36 @@ def delete_book(book_id: int) -> tuple[bool, str]:
     Returns: (success: bool, message: str)
     """
     try:
-        books = global_state.get("books", [])
-        book = next((b for b in books if b.id == book_id), None)
+        books = global_state.books
+        book = None
+        for b in books:
+            if b.get('id') == book_id:
+                book = b
+                break
         
         if not book:
             return False, "Knjiga nije pronađena"
         
         # Check if book is currently borrowed
-        loans = global_state.get("loans", [])
+        loans = global_state.loans
         active_loans = [l for l in loans if l.book_id == book_id and l.status == "active"]
         
         if active_loans:
             return False, "Knjiga ne može biti obrisana jer je trenutno pozajmljena"
         
         # Check if book has active reservations
-        reservations = global_state.get("reservations", [])
+        reservations = global_state.reservations
         active_reservations = [r for r in reservations if r.book_id == book_id and r.status == "active"]
         
         if active_reservations:
             return False, "Knjiga ne može biti obrisana jer ima aktivne rezervacije"
         
         books.remove(book)
-        global_state.set("books", books)
+        global_state.books = books  # Set directly on the object
+        global_state.save_data_to_file()  # Explicitly save to file
         
-        return True, f"Knjiga '{book.title}' je uspešno obrisana"
+        book_title = book.get('title', 'Nepoznata knjiga')
+        return True, f"Knjiga '{book_title}' je uspešno obrisana"
         
     except Exception as e:
         return False, f"Greška prilikom brisanja knjige: {str(e)}"
@@ -186,11 +220,18 @@ def add_member(first_name: str, last_name: str, email: str, phone: str, address:
         if not all([first_name, last_name, email, phone, address, membership_type]):
             return False, "Sva obavezna polja moraju biti popunjena"
         
-        members = global_state.get("members", [])
+        members = global_state.members
         
         # Check if email already exists
         if any(member.email == email for member in members):
             return False, "Član sa ovom e-adresom već postoji"
+        
+        # Set max loans based on membership type
+        max_loans = 5  # Default for regular
+        if membership_type == 'student':
+            max_loans = 3
+        elif membership_type == 'senior':
+            max_loans = 7
         
         new_member = Member(
             id=len(members) + 1,
@@ -204,11 +245,13 @@ def add_member(first_name: str, last_name: str, email: str, phone: str, address:
             membership_status="active",
             membership_start_date=datetime.now(),
             membership_end_date=datetime.now().replace(year=datetime.now().year + 1),
+            max_loans=max_loans,
             created_at=datetime.now()
         )
         
         members.append(new_member)
-        global_state.set("members", members)
+        global_state.members = members
+        global_state.save_data_to_file()
         
         return True, f"Član '{new_member.full_name}' je uspešno dodat"
         
@@ -222,7 +265,7 @@ def update_member(member_id: int, first_name: str, last_name: str, email: str, p
     Returns: (success: bool, message: str)
     """
     try:
-        members = global_state.get("members", [])
+        members = global_state.members
         member = next((m for m in members if m.id == member_id), None)
         
         if not member:
@@ -235,6 +278,13 @@ def update_member(member_id: int, first_name: str, last_name: str, email: str, p
         if any(m.email == email and m.id != member_id for m in members):
             return False, "Član sa ovom e-adresom već postoji"
         
+        # Set max loans based on membership type
+        max_loans = 5  # Default for regular
+        if membership_type == 'student':
+            max_loans = 3
+        elif membership_type == 'senior':
+            max_loans = 7
+        
         # Update member
         member.first_name = first_name
         member.last_name = last_name
@@ -243,7 +293,11 @@ def update_member(member_id: int, first_name: str, last_name: str, email: str, p
         member.address = address
         member.membership_type = membership_type
         member.membership_status = membership_status
+        member.max_loans = max_loans
         member.updated_at = datetime.now()
+        
+        global_state.members = members
+        global_state.save_data_to_file()
         
         return True, f"Član '{member.full_name}' je uspešno ažuriran"
         
@@ -256,44 +310,51 @@ def delete_member(member_id: int) -> tuple[bool, str]:
     Returns: (success: bool, message: str)
     """
     try:
-        members = global_state.get("members", [])
+        members = global_state.members
         member = next((m for m in members if m.id == member_id), None)
         
         if not member:
             return False, "Član nije pronađen"
         
         # Check if member has active loans
-        loans = global_state.get("loans", [])
+        loans = global_state.loans
         active_loans = [l for l in loans if l.member_id == member_id and l.status == "active"]
         
         if active_loans:
             return False, "Član ne može biti obrisan jer ima aktivne pozajmice"
         
-        # Check if member has active reservations
-        reservations = global_state.get("reservations", [])
-        active_reservations = [r for r in reservations if r.member_id == member_id and r.status == "active"]
-        
-        if active_reservations:
-            return False, "Član ne može biti obrisan jer ima aktivne rezervacije"
-        
         members.remove(member)
-        global_state.set("members", members)
+        global_state.members = members
+        global_state.save_data_to_file()
         
         return True, f"Član '{member.full_name}' je uspešno obrisan"
         
     except Exception as e:
         return False, f"Greška prilikom brisanja člana: {str(e)}"
 
-def create_loan(book_id: int, member_id: int, duration_days: int = 14) -> tuple[bool, str]:
+def get_all_members():
     """
-    Create a new loan
+    Get all members from the library
+    Returns: list of members
+    """
+    try:
+        return global_state.members
+    except Exception as e:
+        print(f"Greška pri učitavanju članova: {str(e)}")
+        return []
+
+def add_loan(book_id: int, member_id: int, loan_date: datetime = None, 
+             due_date: datetime = None) -> tuple[bool, str]:
+    """
+    Add a new loan to the library
     Returns: (success: bool, message: str)
     """
     try:
-        books = global_state.get("books", [])
-        members = global_state.get("members", [])
+        books = global_state.books
+        members = global_state.members
         
-        book = next((b for b in books if b.id == book_id), None)
+        # Find book and member
+        book = next((b for b in books if b.get('id') == book_id), None)
         member = next((m for m in members if m.id == member_id), None)
         
         if not book:
@@ -302,147 +363,147 @@ def create_loan(book_id: int, member_id: int, duration_days: int = 14) -> tuple[
         if not member:
             return False, "Član nije pronađen"
         
-        if book.available_copies <= 0:
+        # Check if book is available
+        if book.get('available_copies', 0) <= 0:
             return False, "Knjiga nije dostupna za pozajmljivanje"
         
-        if member.current_loans >= member.max_loans:
-            return False, "Član je dostigao maksimalan broj pozajmica"
+        # Check if member has reached loan limit
+        loans = global_state.loans
+        active_loans = [l for l in loans if l.member_id == member_id and l.status == "active"]
         
-        if member.membership_status != "active":
-            return False, "Članstvo nije aktivno"
+        # Get member's max loans based on membership type
+        member = next((m for m in global_state.members if m.get('id') == member_id), None)
+        max_loans = 5  # Default
+        if member:
+            membership_type = member.get('membership_type', 'regular')
+            if membership_type == 'student':
+                max_loans = 3
+            elif membership_type == 'senior':
+                max_loans = 7
+            else:  # regular
+                max_loans = 5
         
-        # Create loan
-        loans = global_state.get("loans", [])
+        if len(active_loans) >= max_loans:
+            return False, f"Član je dostigao maksimalan broj pozajmica ({max_loans})"
+        
+        # Set default dates if not provided
+        if loan_date is None:
+            loan_date = datetime.now()
+        if due_date is None:
+            due_date = loan_date + timedelta(days=14)  # 2 weeks default
+        
         new_loan = Loan(
             id=len(loans) + 1,
             book_id=book_id,
             member_id=member_id,
-            loan_date=datetime.now(),
-            due_date=datetime.now() + timedelta(days=duration_days),
+            loan_date=loan_date,
+            due_date=due_date,
             status="active",
             created_at=datetime.now()
         )
         
+        # Update book availability
+        book['available_copies'] = book.get('available_copies', 0) - 1
+        
         loans.append(new_loan)
-        global_state.set("loans", loans)
+        global_state.loans = loans
+        global_state.books = books
+        global_state.save_data_to_file()
         
-        # Update book and member
-        book.available_copies -= 1
-        member.current_loans += 1
-        
-        return True, f"Pozajmica je uspešno kreirana. Rok vraćanja: {new_loan.due_date.strftime('%d.%m.%Y')}"
+        return True, f"Pozajmica je uspešno kreirana"
         
     except Exception as e:
         return False, f"Greška prilikom kreiranja pozajmice: {str(e)}"
 
-def return_loan(loan_id: int) -> tuple[bool, str]:
+def return_book(loan_id: int) -> tuple[bool, str]:
     """
-    Return a loaned book
+    Return a book (mark loan as returned)
     Returns: (success: bool, message: str)
     """
     try:
-        loans = global_state.get("loans", [])
+        loans = global_state.loans
         loan = next((l for l in loans if l.id == loan_id), None)
         
         if not loan:
             return False, "Pozajmica nije pronađena"
         
         if loan.status != "active":
-            return False, "Pozajmica nije aktivna"
+            return False, "Pozajmica je već vraćena"
         
-        books = global_state.get("books", [])
-        members = global_state.get("members", [])
-        
-        book = next((b for b in books if b.id == loan.book_id), None)
-        member = next((m for m in members if m.id == loan.member_id), None)
-        
-        # Update loan
-        loan.return_date = datetime.now()
+        # Update loan status
         loan.status = "returned"
-        loan.updated_at = datetime.now()
+        loan.return_date = datetime.now()
         
-        # Update book and member
+        # Update book availability
+        books = global_state.books
+        book = next((b for b in books if b.get('id') == loan.book_id), None)
+        
         if book:
-            book.available_copies += 1
-        if member:
-            member.current_loans -= 1
+            book['available_copies'] = book.get('available_copies', 0) + 1
+            global_state.books = books
+        
+        global_state.loans = loans
+        global_state.save_data_to_file()
         
         return True, "Knjiga je uspešno vraćena"
         
     except Exception as e:
         return False, f"Greška prilikom vraćanja knjige: {str(e)}"
 
-def get_statistics() -> dict:
+def get_all_loans():
     """
-    Get library statistics
-    Returns: dict with various statistics
+    Get all loans from the library
+    Returns: list of loans
     """
     try:
-        books = global_state.get("books", [])
-        members = global_state.get("members", [])
-        loans = global_state.get("loans", [])
-        reservations = global_state.get("reservations", [])
+        return global_state.loans
+    except Exception as e:
+        print(f"Greška pri učitavanju pozajmica: {str(e)}")
+        return []
+
+def get_library_statistics():
+    """
+    Get library statistics
+    Returns: dictionary with statistics
+    """
+    try:
+        books = global_state.books
+        members = global_state.members
+        loans = global_state.loans
         
-        # Basic counts
         total_books = len(books)
         total_members = len(members)
         total_loans = len(loans)
-        total_reservations = len(reservations)
-        
-        # Available books
-        available_books = sum(book.available_copies for book in books)
-        borrowed_books = sum(book.total_copies - book.available_copies for book in books)
-        
-        # Active members
-        active_members = len([m for m in members if m.membership_status == "active"])
-        suspended_members = len([m for m in members if m.membership_status == "suspended"])
-        expired_members = len([m for m in members if m.membership_status == "expired"])
-        
-        # Active loans
         active_loans = len([l for l in loans if l.status == "active"])
-
-        returned_loans = len([l for l in loans if l.status == "returned"])
         
-        # Active reservations
-        active_reservations = len([r for r in reservations if r.status == "active"])
-        fulfilled_reservations = len([r for r in reservations if r.status == "fulfilled"])
-        expired_reservations = len([r for r in reservations if r.status == "expired"])
+        available_books = sum(book.get('available_copies', 0) for book in books)
+        borrowed_books = sum(book.get('total_copies', 0) - book.get('available_copies', 0) for book in books)
         
-        # Popular books (by loan count)
+        # Most popular books (by number of loans)
         book_loan_counts = {}
         for loan in loans:
-            book_loan_counts[loan.book_id] = book_loan_counts.get(loan.book_id, 0) + 1
+            book_id = loan.book_id
+            book_loan_counts[book_id] = book_loan_counts.get(book_id, 0) + 1
         
-        popular_books = []
+        most_popular_books = []
         for book_id, count in sorted(book_loan_counts.items(), key=lambda x: x[1], reverse=True)[:5]:
-            book = next((b for b in books if b.id == book_id), None)
+            book = next((b for b in books if b.get('id') == book_id), None)
             if book:
-                popular_books.append({"title": book.title, "author": book.author, "loans": count})
-        
-        # Membership distribution
-        membership_distribution = {}
-        for member in members:
-            membership_distribution[member.membership_type] = membership_distribution.get(member.membership_type, 0) + 1
+                most_popular_books.append({
+                    'title': book.get('title', 'Nepoznata knjiga'),
+                    'loans': count
+                })
         
         return {
-            "total_books": total_books,
-            "available_books": available_books,
-            "borrowed_books": borrowed_books,
-            "total_members": total_members,
-            "active_members": active_members,
-            "suspended_members": suspended_members,
-            "expired_members": expired_members,
-            "total_loans": total_loans,
-            "active_loans": active_loans,
-
-            "returned_loans": returned_loans,
-            "total_reservations": total_reservations,
-            "active_reservations": active_reservations,
-            "fulfilled_reservations": fulfilled_reservations,
-            "expired_reservations": expired_reservations,
-            "popular_books": popular_books,
-            "membership_distribution": membership_distribution
+            'total_books': total_books,
+            'total_members': total_members,
+            'total_loans': total_loans,
+            'active_loans': active_loans,
+            'available_books': available_books,
+            'borrowed_books': borrowed_books,
+            'most_popular_books': most_popular_books
         }
         
     except Exception as e:
-        return {"error": f"Greška prilikom generisanja statistike: {str(e)}"}
+        print(f"Greška pri učitavanju statistike: {str(e)}")
+        return {}

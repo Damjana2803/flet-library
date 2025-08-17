@@ -13,7 +13,7 @@ from views.admin.admin_loans import admin_loans as admin_loans_content
 from views.admin.admin_statistics import admin_statistics as admin_statistics_content
 
 # Import member views
-from views.member_dashboard import member_dashboard as member_dashboard_content
+from views.member_dashboard import member_dashboard_screen as member_dashboard_content
 from views.book_search import book_search as book_search_content
 from views.my_loans import my_loans as my_loans_content
 from views.my_reservations import my_reservations as my_reservations_content

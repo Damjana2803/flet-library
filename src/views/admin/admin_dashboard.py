@@ -121,9 +121,9 @@ def admin_dashboard(page_data: PageData) -> None:
         spacing=16,
     )
     
-    # Main content
-    content = ft.Column(
-        [
+    # Main content using ListView for proper scrolling
+    content = ft.ListView(
+        controls=[
             ft.Text(
                 "Admin Dashboard",
                 size=32,
@@ -165,7 +165,6 @@ def admin_dashboard(page_data: PageData) -> None:
                         ft.Text("Pozajmice", size=16, weight=ft.FontWeight.BOLD, color=ft.Colors.BLUE_900),
                         ft.Row([
                             ft.Text(f"• Aktivne: {active_loans} pozajmica", size=14, color=ft.Colors.ORANGE),
-
                             ft.Text(f"• Vraćene: {len([loan for loan in loans if loan['status'] == 'returned'])} pozajmica", size=14, color=ft.Colors.GREEN),
                         ], wrap=True),
                     ]),
@@ -192,9 +191,10 @@ def admin_dashboard(page_data: PageData) -> None:
                     statistics_card,
                 ],
             ),
+            ft.Container(height=50),  # Bottom spacing
         ],
         spacing=16,
-        scroll=ft.ScrollMode.AUTO,
+        expand=True,
     )
     
     return ft.Column([

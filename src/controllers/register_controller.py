@@ -47,17 +47,15 @@ def handle_register(email: str, name: str, password: str, faculty: str) -> bool:
 		'errors': errors
 	}
 
-def handle_member_register(first_name: str, last_name: str, email: str, password: str, phone: str, address: str, membership_type: str) -> tuple[bool, str]:
+def handle_member_register(full_name: str, email: str, password: str, phone: str, address: str, membership_type: str) -> tuple[bool, str]:
     """
     Handle member registration
     Returns: (success: bool, message: str)
     """
     try:
         # Basic validation
-        if not first_name:
-            return False, "Ime je obavezno polje"
-        if not last_name:
-            return False, "Prezime je obavezno polje"
+        if not full_name:
+            return False, "Ime i prezime je obavezno polje"
         if not email:
             return False, "E-adresa je obavezno polje"
         if not password:
@@ -73,7 +71,7 @@ def handle_member_register(first_name: str, last_name: str, email: str, password
             return False, "Lozinka mora imati najmanje 6 karaktera"
         
         # Check if email already exists
-        existing_members = global_state.get("members", [])
+        existing_members = global_state.members
         # Convert existing members to Member objects if they're dictionaries
         member_objects = []
         for member_data in existing_members:
@@ -88,6 +86,18 @@ def handle_member_register(first_name: str, last_name: str, email: str, password
         # Hash password
         password_hash = hashlib.sha256(password.encode()).hexdigest()
         
+        # Set max loans based on membership type
+        max_loans = 5  # Default for regular
+        if membership_type == 'student':
+            max_loans = 3
+        elif membership_type == 'senior':
+            max_loans = 7
+        
+        # Split full name into first and last name
+        name_parts = full_name.strip().split(' ', 1)
+        first_name = name_parts[0] if name_parts else ""
+        last_name = name_parts[1] if len(name_parts) > 1 else ""
+        
         # Create new member
         new_member = Member(
             id=len(existing_members) + 1,
@@ -101,6 +111,7 @@ def handle_member_register(first_name: str, last_name: str, email: str, password
             membership_status="active",
             membership_start_date=datetime.now(),
             membership_end_date=datetime.now().replace(year=datetime.now().year + 1),
+            max_loans=max_loans,
             created_at=datetime.now()
         )
         
@@ -108,17 +119,18 @@ def handle_member_register(first_name: str, last_name: str, email: str, password
         # Convert Member object to dictionary for storage
         member_dict = new_member.to_dict()
         existing_members.append(member_dict)
-        global_state.set("members", existing_members)
+        global_state.members = existing_members
         
         # Also store user credentials for login
-        users = global_state.get("users", [])
+        users = global_state.users
         users.append({
             "email": email,
             "password_hash": password_hash,
             "user_type": "member",
             "member_id": new_member.id
         })
-        global_state.set("users", users)
+        global_state.users = users
+        global_state.save_data_to_file()
         
         return True, "Registracija uspešna! Možete se prijaviti."
         

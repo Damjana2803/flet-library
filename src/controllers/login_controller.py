@@ -40,7 +40,7 @@ def handle_admin_login(email: str, password: str):
             'permissions': ['books', 'members', 'loans', 'reports'],
             'is_active': True
         }
-        global_state.set("user", admin_data)
+        global_state.user = admin_data
         return True, admin_data
     
     return False, None
@@ -50,8 +50,8 @@ def handle_member_login(email: str, password: str):
     import hashlib
     
     # Get registered users from global state
-    users = global_state.get("users", [])
-    members = global_state.get("members", [])
+    users = global_state.users
+    members = global_state.members
     
     # Hash the provided password
     password_hash = hashlib.sha256(password.encode()).hexdigest()
@@ -82,7 +82,7 @@ def handle_member_login(email: str, password: str):
                     'max_loans': member_data.get('max_loans', 5),
                     'is_admin': False
                 }
-                global_state.set("user", login_data)
+                global_state.user = login_data
                 return True, login_data
     
     return False, None

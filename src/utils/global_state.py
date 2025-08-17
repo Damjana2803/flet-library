@@ -12,6 +12,32 @@ class GlobalState:
 		self.reservations = []
 		self.users = []
 		self.load_data_from_file()  # Load data from file
+		
+		# Add test user if no users exist
+		if not self.users:
+			import hashlib
+			test_password_hash = hashlib.sha256("dacika123".encode()).hexdigest()
+			self.users.append({
+				"email": "dami@gmail.com",
+				"password_hash": test_password_hash,
+				"user_type": "member",
+				"member_id": 1
+			})
+			self.members.append({
+				"id": 1,
+				"first_name": "Damjana",
+				"last_name": "Zubac",
+				"email": "dami@gmail.com",
+				"phone": "0645367892",
+				"address": "Donji Jasenovik",
+				"membership_number": "MEM001",
+				"membership_type": "regular",
+				"membership_status": "active",
+				"max_loans": 5,
+				"current_loans": 0
+			})
+			print("Added test user: dami@gmail.com / dacika123")
+		
 		self._check_if_logged_in()
 
 	def set_init(self):
@@ -59,14 +85,14 @@ class GlobalState:
 		}
 		
 		# Create storage directory if it doesn't exist
-		os.makedirs('storage', exist_ok=True)
+		os.makedirs('../storage', exist_ok=True)
 		
-		with open('storage/library_data.json', 'w', encoding='utf-8') as f:
+		with open('../storage/library_data.json', 'w', encoding='utf-8') as f:
 			json.dump(data, f, ensure_ascii=False, indent=2)
 	
 	def load_data_from_file(self):
 		"""Load all data from JSON file"""
-		file_path = 'storage/library_data.json'
+		file_path = '../storage/library_data.json'
 		
 		if os.path.exists(file_path):
 			try:
@@ -77,6 +103,7 @@ class GlobalState:
 					self.loans = data.get('loans', [])
 					self.reservations = data.get('reservations', [])
 					self.users = data.get('users', [])
+					print(f"Loaded {len(self.users)} users and {len(self.members)} members from file")
 			except Exception as e:
 				print(f"Error loading data: {e}")
 				# Initialize with empty lists if loading fails
