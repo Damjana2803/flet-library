@@ -188,14 +188,26 @@ def delete_book(book_id: int) -> tuple[bool, str]:
         
         # Check if book is currently borrowed
         loans = global_state.loans
-        active_loans = [l for l in loans if l.book_id == book_id and l.status == "active"]
+        active_loans = []
+        if loans:
+            for l in loans:
+                loan_book_id = l.get('book_id') if isinstance(l, dict) else getattr(l, 'book_id', None)
+                loan_status = l.get('status') if isinstance(l, dict) else getattr(l, 'status', None)
+                if loan_book_id == book_id and loan_status == "active":
+                    active_loans.append(l)
         
         if active_loans:
             return False, "Knjiga ne može biti obrisana jer je trenutno pozajmljena"
         
         # Check if book has active reservations
         reservations = global_state.reservations
-        active_reservations = [r for r in reservations if r.book_id == book_id and r.status == "active"]
+        active_reservations = []
+        if reservations:
+            for r in reservations:
+                res_book_id = r.get('book_id') if isinstance(r, dict) else getattr(r, 'book_id', None)
+                res_status = r.get('status') if isinstance(r, dict) else getattr(r, 'status', None)
+                if res_book_id == book_id and res_status == "active":
+                    active_reservations.append(r)
         
         if active_reservations:
             return False, "Knjiga ne može biti obrisana jer ima aktivne rezervacije"

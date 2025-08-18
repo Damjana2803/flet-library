@@ -310,3 +310,4 @@ Aplikacija je napisana koristeći moderne Python tehnologije i prati najbolje pr
 - **API**: REST API za integraciju sa drugim sistemima
 
 
+

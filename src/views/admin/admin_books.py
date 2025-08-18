@@ -2,7 +2,7 @@ import flet as ft
 from flet_navigator import PageData
 from components.navbar import NavBar
 from components.snack_bar import show_snack_bar
-from controllers.admin_controller import add_book, get_all_books, delete_book
+from controllers.admin_controller import add_book, get_all_books, delete_book, update_book
 from utils.global_state import global_state
 
 def admin_books(page_data: PageData):
@@ -49,6 +49,38 @@ def admin_books(page_data: PageData):
         actions_alignment=ft.MainAxisAlignment.END,
     )
     
+    # Edit book dialog fields
+    edit_title_field = ft.TextField(label="Naslov *", hint_text="Unesite naslov knjige")
+    edit_author_field = ft.TextField(label="Autor *", hint_text="Unesite ime autora")
+    edit_isbn_field = ft.TextField(label="ISBN *", hint_text="Unesite ISBN broj")
+    edit_category_field = ft.TextField(label="Kategorija", hint_text="Unesite kategoriju")
+    edit_year_field = ft.TextField(label="Godina izdanja *", hint_text="Unesite godinu")
+    edit_publisher_field = ft.TextField(label="Izdavač", hint_text="Unesite izdavača")
+    edit_description_field = ft.TextField(label="Opis", multiline=True, min_lines=3, max_lines=5, hint_text="Unesite opis knjige")
+    edit_copies_field = ft.TextField(label="Broj primeraka *", hint_text="Unesite broj primeraka")
+    edit_location_field = ft.TextField(label="Lokacija", hint_text="Unesite lokaciju")
+    
+    # Edit book dialog
+    edit_dialog = ft.AlertDialog(
+        title=ft.Text("Izmeni knjigu"),
+        content=ft.Column([
+            edit_title_field,
+            edit_author_field,
+            edit_isbn_field,
+            edit_category_field,
+            edit_year_field,
+            edit_publisher_field,
+            edit_description_field,
+            edit_copies_field,
+            edit_location_field
+        ], scroll=ft.ScrollMode.AUTO, height=400),
+        actions=[
+            ft.TextButton("Otkaži", on_click=lambda e: close_edit_dialog()),
+            ft.TextButton("Sačuvaj", on_click=lambda e: update_book_action())
+        ],
+        actions_alignment=ft.MainAxisAlignment.END,
+    )
+    
     def open_add_dialog():
         page.dialog = add_dialog
         add_dialog.open = True
@@ -56,6 +88,26 @@ def admin_books(page_data: PageData):
     
     def close_add_dialog():
         add_dialog.open = False
+        page.update()
+    
+    def open_edit_dialog(book_data):
+        # Prepopulate fields with book data
+        edit_title_field.value = book_data.get('title', '')
+        edit_author_field.value = book_data.get('author', '')
+        edit_isbn_field.value = book_data.get('isbn', '')
+        edit_category_field.value = book_data.get('category', '')
+        edit_year_field.value = str(book_data.get('publication_year', ''))
+        edit_publisher_field.value = book_data.get('publisher', '')
+        edit_description_field.value = book_data.get('description', '')
+        edit_copies_field.value = str(book_data.get('total_copies', ''))
+        edit_location_field.value = book_data.get('location', '')
+        
+        page.dialog = edit_dialog
+        edit_dialog.open = True
+        page.update()
+    
+    def close_edit_dialog():
+        edit_dialog.open = False
         page.update()
     
     def save_book():
@@ -105,6 +157,57 @@ def admin_books(page_data: PageData):
         except Exception as e:
             show_snack_bar(page, f"Greška: {str(e)}", "ERROR")
     
+    # Variable to store book being edited
+    current_editing_book_id = None
+    
+    def update_book_action():
+        try:
+            # Validate required fields
+            if not edit_title_field.value or not edit_author_field.value or not edit_isbn_field.value:
+                show_snack_bar(page, "Molimo popunite sva obavezna polja", "ERROR")
+                return
+            
+            # Convert year to int (remove any trailing dots or spaces)
+            try:
+                year_str = edit_year_field.value.strip().rstrip('.')
+                year = int(year_str)
+            except ValueError:
+                show_snack_bar(page, "Godina izdanja mora biti broj", "ERROR")
+                return
+            
+            # Convert copies to int (remove any trailing dots or spaces)
+            try:
+                copies_str = edit_copies_field.value.strip().rstrip('.')
+                copies = int(copies_str)
+            except ValueError:
+                show_snack_bar(page, "Broj primeraka mora biti broj", "ERROR")
+                return
+            
+            # Update book
+            success, message = update_book(
+                book_id=current_editing_book_id,
+                title=edit_title_field.value,
+                author=edit_author_field.value,
+                isbn=edit_isbn_field.value,
+                category=edit_category_field.value or "Opšta",
+                publication_year=year,
+                publisher=edit_publisher_field.value or "Nepoznato",
+                description=edit_description_field.value or "",
+                total_copies=copies,
+                location=edit_location_field.value or "Glavna biblioteka"
+            )
+            
+            if success:
+                show_snack_bar(page, "Knjiga uspešno ažurirana!", "SUCCESS")
+                close_edit_dialog()
+                clear_edit_dialog_fields()
+                load_books()  # Refresh the list
+            else:
+                show_snack_bar(page, f"Greška: {message}", "ERROR")
+                
+        except Exception as e:
+            show_snack_bar(page, f"Greška: {str(e)}", "ERROR")
+    
     def clear_dialog_fields():
         title_field.value = ""
         author_field.value = ""
@@ -115,6 +218,18 @@ def admin_books(page_data: PageData):
         description_field.value = ""
         copies_field.value = ""
         location_field.value = ""
+        page.update()
+    
+    def clear_edit_dialog_fields():
+        edit_title_field.value = ""
+        edit_author_field.value = ""
+        edit_isbn_field.value = ""
+        edit_category_field.value = ""
+        edit_year_field.value = ""
+        edit_publisher_field.value = ""
+        edit_description_field.value = ""
+        edit_copies_field.value = ""
+        edit_location_field.value = ""
         page.update()
     
     def load_books():
@@ -246,8 +361,20 @@ def admin_books(page_data: PageData):
         page.update()
     
     def edit_book(book_id):
-        # TODO: Implement edit functionality
-        show_snack_bar(page, "Funkcionalnost izmene će biti dodata uskoro", "INFO")
+        nonlocal current_editing_book_id
+        current_editing_book_id = book_id
+        
+        # Find the book data
+        book_data = None
+        for book in books:
+            if book.get('id') == book_id:
+                book_data = book
+                break
+        
+        if book_data:
+            open_edit_dialog(book_data)
+        else:
+            show_snack_bar(page, "Knjiga nije pronađena", "ERROR")
     
     def delete_book_confirm(book_id):
         def confirm_delete(e):
@@ -261,19 +388,25 @@ def admin_books(page_data: PageData):
             except Exception as e:
                 show_snack_bar(page, f"Greška: {str(e)}", "ERROR")
             finally:
-                page.dialog.open = False
+                delete_dialog.open = False
                 page.update()
         
-        page.dialog = ft.AlertDialog(
+        def cancel_delete(e):
+            delete_dialog.open = False
+            page.update()
+        
+        delete_dialog = ft.AlertDialog(
             title=ft.Text("Potvrda brisanja"),
             content=ft.Text("Da li ste sigurni da želite da obrišete ovu knjigu?"),
             actions=[
-                ft.TextButton("Otkaži", on_click=lambda e: setattr(page.dialog, 'open', False)),
-                ft.TextButton("Obriši", on_click=confirm_delete)
+                ft.TextButton("Otkaži", on_click=cancel_delete),
+                ft.TextButton("Obriši", on_click=confirm_delete, style=ft.ButtonStyle(color=ft.colors.RED))
             ],
             actions_alignment=ft.MainAxisAlignment.END,
         )
-        page.dialog.open = True
+        
+        page.dialog = delete_dialog
+        delete_dialog.open = True
         page.update()
     
     # Create books table

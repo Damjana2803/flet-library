@@ -1,7 +1,7 @@
 import flet as ft
 from flet_navigator import PageData
 from components.navbar import NavBar
-from components.snack_bar import SnackBar
+from components.snack_bar import show_snack_bar
 from models.member import Member
 from utils.global_state import global_state
 from datetime import datetime
@@ -12,7 +12,7 @@ def admin_members(page_data: PageData) -> None:
     navbar_content = NavBar("admin", page_data)
     
     # Get members from global state or initialize with sample data
-    members_data = global_state.get("members", [])
+    members_data = global_state.members if global_state.members else []
     
     # If no members exist, initialize with sample data
     if not members_data:
@@ -63,7 +63,8 @@ def admin_members(page_data: PageData) -> None:
                 "current_loans": 0
             }
         ]
-        global_state.set("members", members_data)
+        global_state.members = members_data
+        global_state.save_data_to_file()
     
     def show_member_dialog(member=None, is_edit=False):
         title = "Izmeni člana" if is_edit else "Dodaj novog člana"
@@ -116,8 +117,7 @@ def admin_members(page_data: PageData) -> None:
         
         def save_member(e):
             if not all([first_name_tf.value, last_name_tf.value, email_tf.value]):
-                page.overlay.append(SnackBar("Greška", "Popunite sva obavezna polja", "ERROR"))
-                page.update()
+                show_snack_bar(page, "Popunite sva obavezna polja", "ERROR")
                 return
             
             if is_edit:
@@ -129,7 +129,7 @@ def admin_members(page_data: PageData) -> None:
                 member["address"] = address_tf.value
                 member["membership_type"] = membership_type_dd.value
                 member["membership_status"] = membership_status_dd.value
-                page.overlay.append(SnackBar("Uspešno", "Član je ažuriran"))
+                show_snack_bar(page, "Član je uspešno ažuriran", "SUCCESS")
             else:
                 # Add new member
                 new_member = {
@@ -148,10 +148,11 @@ def admin_members(page_data: PageData) -> None:
                     "current_loans": 0
                 }
                 members_data.append(new_member)
-                page.overlay.append(SnackBar("Uspešno", "Novi član je dodat"))
+                show_snack_bar(page, "Novi član je uspešno dodat", "SUCCESS")
             
             # Save to global state
-            global_state.set("members", members_data)
+            global_state.members = members_data
+            global_state.save_data_to_file()
             
             page.update()
             dialog.open = False
@@ -181,28 +182,33 @@ def admin_members(page_data: PageData) -> None:
         if member:
             members_data.remove(member)
             # Save to global state
-            global_state.set("members", members_data)
-            page.overlay.append(SnackBar("Uspešno", "Član je obrisan"))
-            page.update()
+            global_state.members = members_data
+            global_state.save_data_to_file()
+            show_snack_bar(page, "Član je uspešno obrisan", "SUCCESS")
             refresh_members_list()
     
     def show_delete_dialog(member):
         def confirm_delete(e):
             delete_member(member["id"])
-            dialog.open = False
+            delete_dialog.open = False
             page.update()
         
-        dialog = ft.AlertDialog(
+        def cancel_delete(e):
+            delete_dialog.open = False
+            page.update()
+        
+        delete_dialog = ft.AlertDialog(
             title=ft.Text("Potvrda brisanja"),
             content=ft.Text(f"Da li ste sigurni da želite da obrišete člana {member['first_name']} {member['last_name']}?"),
             actions=[
-                ft.TextButton("Otkaži", on_click=lambda e: setattr(dialog, 'open', False)),
+                ft.TextButton("Otkaži", on_click=cancel_delete),
                 ft.TextButton("Obriši", on_click=confirm_delete, style=ft.ButtonStyle(color=ft.colors.RED))
-            ]
+            ],
+            actions_alignment=ft.MainAxisAlignment.END,
         )
         
-        page.dialog = dialog
-        dialog.open = True
+        page.dialog = delete_dialog
+        delete_dialog.open = True
         page.update()
     
     def refresh_members_list():
@@ -252,8 +258,8 @@ def admin_members(page_data: PageData) -> None:
                                 padding=ft.padding.only(left=16, right=16, bottom=16)
                             ),
                             ft.Row([
-                                ft.TextButton("Izmeni", on_click=lambda m=member: show_member_dialog(m, True)),
-                                ft.TextButton("Obriši", on_click=lambda m=member: show_delete_dialog(m), style=ft.ButtonStyle(color=ft.colors.RED))
+                                ft.TextButton("Izmeni", on_click=lambda e, m=member: show_member_dialog(m, True)),
+                                ft.TextButton("Obriši", on_click=lambda e, m=member: show_delete_dialog(m), style=ft.ButtonStyle(color=ft.colors.RED))
                             ], alignment=ft.MainAxisAlignment.END)
                         ])
                     )
@@ -328,8 +334,8 @@ def admin_members(page_data: PageData) -> None:
                                 padding=ft.padding.only(left=16, right=16, bottom=16)
                             ),
                             ft.Row([
-                                ft.TextButton("Izmeni", on_click=lambda m=member: show_member_dialog(m, True)),
-                                ft.TextButton("Obriši", on_click=lambda m=member: show_delete_dialog(m), style=ft.ButtonStyle(color=ft.colors.RED))
+                                ft.TextButton("Izmeni", on_click=lambda e, m=member: show_member_dialog(m, True)),
+                                ft.TextButton("Obriši", on_click=lambda e, m=member: show_delete_dialog(m), style=ft.ButtonStyle(color=ft.colors.RED))
                             ], alignment=ft.MainAxisAlignment.END)
                         ])
                     )
