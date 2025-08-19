@@ -202,7 +202,7 @@ def admin_members(page_data: PageData) -> None:
             content=ft.Text(f"Da li ste sigurni da želite da obrišete člana {member['first_name']} {member['last_name']}?"),
             actions=[
                 ft.TextButton("Otkaži", on_click=cancel_delete),
-                ft.TextButton("Obriši", on_click=confirm_delete, style=ft.ButtonStyle(color=ft.colors.RED))
+                ft.TextButton("Obriši", on_click=confirm_delete, style=ft.ButtonStyle(color=ft.Colors.RED))
             ],
             actions_alignment=ft.MainAxisAlignment.END,
         )
@@ -216,17 +216,17 @@ def admin_members(page_data: PageData) -> None:
         
         for member in members_data:
             status_color = {
-                "active": ft.colors.GREEN,
-                "suspended": ft.colors.ORANGE,
-                "expired": ft.colors.RED
-            }.get(member["membership_status"], ft.colors.GREY)
+                "active": ft.Colors.GREEN,
+                "suspended": ft.Colors.ORANGE,
+                "expired": ft.Colors.RED
+            }.get(member["membership_status"], ft.Colors.GREY)
             
             members_list.controls.append(
                 ft.Card(
                     content=ft.Container(
                         content=ft.Column([
                             ft.ListTile(
-                                leading=ft.Icon(ft.icons.PERSON, color=ft.colors.BLUE),
+                                leading=ft.Icon(ft.Icons.PERSON, color=ft.Colors.BLUE),
                                 title=ft.Text(f"{member['first_name']} {member['last_name']}"),
                                 subtitle=ft.Text(f"Član broj: {member['membership_number']}"),
                             ),
@@ -241,7 +241,7 @@ def admin_members(page_data: PageData) -> None:
                                         ft.Container(
                                             content=ft.Text(
                                                 member["membership_status"].upper(),
-                                                color=ft.colors.WHITE,
+                                                color=ft.Colors.WHITE,
                                                 size=10,
                                                 weight=ft.FontWeight.BOLD
                                             ),
@@ -259,7 +259,7 @@ def admin_members(page_data: PageData) -> None:
                             ),
                             ft.Row([
                                 ft.TextButton("Izmeni", on_click=lambda e, m=member: show_member_dialog(m, True)),
-                                ft.TextButton("Obriši", on_click=lambda e, m=member: show_delete_dialog(m), style=ft.ButtonStyle(color=ft.colors.RED))
+                                ft.TextButton("Obriši", on_click=lambda e, m=member: show_delete_dialog(m), style=ft.ButtonStyle(color=ft.Colors.RED))
                             ], alignment=ft.MainAxisAlignment.END)
                         ])
                     )
@@ -271,7 +271,7 @@ def admin_members(page_data: PageData) -> None:
     # Search functionality
     search_tf = ft.TextField(
         label="Pretraži članove",
-        prefix_icon=ft.icons.SEARCH,
+        prefix_icon=ft.Icons.SEARCH,
         on_change=lambda e: filter_members(e.control.value),
         expand=True
     )
@@ -292,17 +292,17 @@ def admin_members(page_data: PageData) -> None:
         for member in filtered_members:
             # Same card creation logic as in refresh_members_list
             status_color = {
-                "active": ft.colors.GREEN,
-                "suspended": ft.colors.ORANGE,
-                "expired": ft.colors.RED
-            }.get(member["membership_status"], ft.colors.GREY)
+                "active": ft.Colors.GREEN,
+                "suspended": ft.Colors.ORANGE,
+                "expired": ft.Colors.RED
+            }.get(member["membership_status"], ft.Colors.GREY)
             
             members_list.controls.append(
                 ft.Card(
                     content=ft.Container(
                         content=ft.Column([
                             ft.ListTile(
-                                leading=ft.Icon(ft.icons.PERSON, color=ft.colors.BLUE),
+                                leading=ft.Icon(ft.Icons.PERSON, color=ft.Colors.BLUE),
                                 title=ft.Text(f"{member['first_name']} {member['last_name']}"),
                                 subtitle=ft.Text(f"Član broj: {member['membership_number']}"),
                             ),
@@ -317,7 +317,7 @@ def admin_members(page_data: PageData) -> None:
                                         ft.Container(
                                             content=ft.Text(
                                                 member["membership_status"].upper(),
-                                                color=ft.colors.WHITE,
+                                                color=ft.Colors.WHITE,
                                                 size=10,
                                                 weight=ft.FontWeight.BOLD
                                             ),
@@ -335,7 +335,7 @@ def admin_members(page_data: PageData) -> None:
                             ),
                             ft.Row([
                                 ft.TextButton("Izmeni", on_click=lambda e, m=member: show_member_dialog(m, True)),
-                                ft.TextButton("Obriši", on_click=lambda e, m=member: show_delete_dialog(m), style=ft.ButtonStyle(color=ft.colors.RED))
+                                ft.TextButton("Obriši", on_click=lambda e, m=member: show_delete_dialog(m), style=ft.ButtonStyle(color=ft.Colors.RED))
                             ], alignment=ft.MainAxisAlignment.END)
                         ])
                     )
@@ -353,7 +353,7 @@ def admin_members(page_data: PageData) -> None:
         ft.Card(
             content=ft.Container(
                 content=ft.Column([
-                    ft.Text(f"{total_members}", size=32, weight=ft.FontWeight.BOLD, color=ft.colors.BLUE),
+                    ft.Text(f"{total_members}", size=32, weight=ft.FontWeight.BOLD, color=ft.Colors.BLUE),
                     ft.Text("Ukupno članova", size=14)
                 ], horizontal_alignment=ft.CrossAxisAlignment.CENTER),
                 padding=ft.padding.all(16)
@@ -363,7 +363,7 @@ def admin_members(page_data: PageData) -> None:
         ft.Card(
             content=ft.Container(
                 content=ft.Column([
-                    ft.Text(f"{active_members}", size=32, weight=ft.FontWeight.BOLD, color=ft.colors.GREEN),
+                    ft.Text(f"{active_members}", size=32, weight=ft.FontWeight.BOLD, color=ft.Colors.GREEN),
                     ft.Text("Aktivnih", size=14)
                 ], horizontal_alignment=ft.CrossAxisAlignment.CENTER),
                 padding=ft.padding.all(16)
@@ -373,7 +373,7 @@ def admin_members(page_data: PageData) -> None:
         ft.Card(
             content=ft.Container(
                 content=ft.Column([
-                    ft.Text(f"{student_members}", size=32, weight=ft.FontWeight.BOLD, color=ft.colors.ORANGE),
+                    ft.Text(f"{student_members}", size=32, weight=ft.FontWeight.BOLD, color=ft.Colors.ORANGE),
                     ft.Text("Studenata", size=14)
                 ], horizontal_alignment=ft.CrossAxisAlignment.CENTER),
                 padding=ft.padding.all(16)
@@ -390,7 +390,7 @@ def admin_members(page_data: PageData) -> None:
         search_tf,
         ft.ElevatedButton(
             "Dodaj člana",
-            icon=ft.icons.ADD,
+            icon=ft.Icons.ADD,
             on_click=lambda e: show_member_dialog()
         )
     ])

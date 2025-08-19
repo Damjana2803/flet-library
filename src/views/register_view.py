@@ -105,7 +105,7 @@ def register_screen(page_data: PageData):
 				ft.Text(
 					'Postanite član naše biblioteke',
 					theme_style=ft.TextThemeStyle.BODY_MEDIUM,
-					color=ft.colors.GREY_600,
+					color=ft.Colors.GREY_600,
 					text_align=ft.TextAlign.CENTER
 				),
 				ft.Column(
@@ -125,7 +125,7 @@ def register_screen(page_data: PageData):
 							on_click = lambda _: asyncio.run(on_submit()),
 							height=50,
 							expand=True,
-							icon=ft.icons.PERSON_ADD
+							icon=ft.Icons.PERSON_ADD
 						) 
 					],
 				),

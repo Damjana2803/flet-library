@@ -13,7 +13,7 @@ def admin_books(page_data: PageData):
     books = []
     search_query = ft.TextField(
         label="Pretraži knjige",
-        prefix_icon=ft.icons.SEARCH,
+        prefix_icon=ft.Icons.SEARCH,
         on_change=lambda e: filter_books()
     )
     
@@ -340,14 +340,14 @@ def admin_books(page_data: PageData):
                         ft.DataCell(
                             ft.Row([
                                 ft.IconButton(
-                                    icon=ft.icons.EDIT,
-                                    icon_color=ft.colors.BLUE,
+                                    icon=ft.Icons.EDIT,
+                                    icon_color=ft.Colors.BLUE,
                                     tooltip="Izmeni",
                                     on_click=lambda e, book_id=book.get('id'): edit_book(book_id)
                                 ),
                                 ft.IconButton(
-                                    icon=ft.icons.DELETE,
-                                    icon_color=ft.colors.RED,
+                                    icon=ft.Icons.DELETE,
+                                    icon_color=ft.Colors.RED,
                                     tooltip="Obriši",
                                     on_click=lambda e, book_id=book.get('id'): delete_book_confirm(book_id)
                                 )
@@ -400,7 +400,7 @@ def admin_books(page_data: PageData):
             content=ft.Text("Da li ste sigurni da želite da obrišete ovu knjigu?"),
             actions=[
                 ft.TextButton("Otkaži", on_click=cancel_delete),
-                ft.TextButton("Obriši", on_click=confirm_delete, style=ft.ButtonStyle(color=ft.colors.RED))
+                ft.TextButton("Obriši", on_click=confirm_delete, style=ft.ButtonStyle(color=ft.Colors.RED))
             ],
             actions_alignment=ft.MainAxisAlignment.END,
         )
@@ -439,7 +439,7 @@ def admin_books(page_data: PageData):
                             ft.Text("Upravljanje knjigama", theme_style=ft.TextThemeStyle.HEADLINE_MEDIUM),
                             ft.ElevatedButton(
                                 "Dodaj knjigu",
-                                icon=ft.icons.ADD,
+                                icon=ft.Icons.ADD,
                                 on_click=lambda e: open_add_dialog()
                             )
                         ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),

@@ -1,0 +1,5 @@
+[33m36cfd1b[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mfeature/library[m[33m, [m[1;31morigin/feature/library[m[33m)[m Fix scrolling issues and add comprehensive documentation
+[33m754e2d4[m Add complete CRUD functionality for books and members
+[33m5fb2f2c[m Fix member registration, login system and improve dashboard design
+[33m49e765f[m add: include root project files and configuration
+[33m85a1c34[m refactor: convert from symposium to library management system
