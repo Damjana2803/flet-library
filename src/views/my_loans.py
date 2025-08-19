@@ -1,7 +1,7 @@
 import flet as ft
 from flet_navigator import PageData
 from components.navbar import NavBar
-from components.snack_bar import SnackBar
+from components.snack_bar import show_snack_bar
 from datetime import datetime, timedelta
 
 def my_loans(page_data: PageData) -> None:
@@ -14,8 +14,8 @@ def my_loans(page_data: PageData) -> None:
     # Get current user and loans from global state
     from utils.global_state import global_state
     
-    current_user = global_state.get("user", {})
-    all_loans = global_state.get("loans", [])
+    current_user = global_state.get_user()
+    all_loans = global_state.loans if global_state.loans else []
     
     # Filter loans for current user
     user_id = current_user.get("id")
@@ -31,7 +31,7 @@ def my_loans(page_data: PageData) -> None:
         from datetime import datetime, timedelta
         
         # Get all loans
-        all_loans = global_state.get("loans", [])
+        all_loans = global_state.loans if global_state.loans else []
         
         # Find the loan and extend it
         loan_found = False
@@ -47,71 +47,68 @@ def my_loans(page_data: PageData) -> None:
                 break
         
         if not loan_found:
-            page.overlay.append(
-                SnackBar("Pozajmica nije pronađena ili je već vraćena!", duration=3000)
-            )
-            page.update()
+            show_snack_bar(page, "Pozajmica nije pronađena ili je već vraćena!", "ERROR")
             return
         
         # Save to global state
-        global_state.set("loans", all_loans)
+        global_state.loans = all_loans
+        global_state.save_data_to_file()
         
-        # Show success message
-        page.overlay.append(
-            SnackBar("Knjiga je uspešno produžena za 14 dana!", duration=3000)
-        )
-        page.update()
+        # Show success message and refresh
+        show_snack_bar(page, "Knjiga je uspešno produžena za 14 dana!", "SUCCESS")
+        
+        # Refresh the page
+        page_data.navigate('my_loans')
     
     def return_book(loan_id):
         """Return a book - mark loan as returned and update book availability"""
-        from utils.global_state import global_state
-        from datetime import datetime
-        
-        # Get all loans and books
-        all_loans = global_state.get("loans", [])
-        all_books = global_state.get("books", [])
-        current_user = global_state.get("user", {})
-        
-        # Find the loan and mark it as returned
-        loan_found = False
-        book_id = None
-        
-        for i, loan in enumerate(all_loans):
-            if loan.get('id') == loan_id:
-                all_loans[i]['status'] = 'returned'
-                all_loans[i]['returned_date'] = datetime.now().strftime("%Y-%m-%d")
-                book_id = loan.get('book_id')
-                loan_found = True
-                break
-        
-        if not loan_found:
-            page.overlay.append(
-                SnackBar("Pozajmica nije pronađena!", duration=3000)
-            )
-            page.update()
-            return
-        
-        # Update book availability
-        if book_id:
-            for i, book in enumerate(all_books):
-                if book.get('id') == book_id:
-                    all_books[i]['available_copies'] = book.get('available_copies', 0) + 1
+        try:
+            # Get all loans and books
+            all_loans = global_state.loans if global_state.loans else []
+            all_books = global_state.books if global_state.books else []
+            current_user = global_state.get_user()
+            
+            # Find the loan and mark it as returned
+            loan_found = False
+            book_id = None
+            
+            for i, loan in enumerate(all_loans):
+                if loan.get('id') == loan_id:
+                    all_loans[i]['status'] = 'returned'
+                    all_loans[i]['returned_date'] = datetime.now().strftime("%Y-%m-%d")
+                    book_id = loan.get('book_id')
+                    loan_found = True
                     break
-        
-        # Update user's current loans count
-        if current_user:
-            current_user['current_loans'] = max(0, current_user.get('current_loans', 0) - 1)
-            global_state.set("user", current_user)
-        
-        # Save to global state
-        global_state.set("loans", all_loans)
-        global_state.set("books", all_books)
-        
-        # Show success message
-        page.overlay.append(
-            SnackBar("Knjiga je uspešno vraćena!", duration=3000)
-        )
-        page.update()
+            
+            if not loan_found:
+                show_snack_bar(page, "Pozajmica nije pronađena!", "ERROR")
+                return
+            
+            # Update book availability
+            if book_id:
+                for i, book in enumerate(all_books):
+                    if book.get('id') == book_id:
+                        all_books[i]['available_copies'] = book.get('available_copies', 0) + 1
+                        break
+            
+            # Update user's current loans count
+            if current_user:
+                current_user['current_loans'] = max(0, current_user.get('current_loans', 0) - 1)
+                global_state.user = current_user
+            
+            # Save to global state
+            global_state.loans = all_loans
+            global_state.books = all_books
+            global_state.save_data_to_file()
+            
+            # Show success message and refresh
+            show_snack_bar(page, "Knjiga je uspešno vraćena!", "SUCCESS")
+            
+            # Refresh the page by re-navigating
+            page_data.navigate('my_loans')
+            
+        except Exception as e:
+            show_snack_bar(page, f"Greška: {str(e)}", "ERROR")
     
 
     
@@ -311,15 +308,128 @@ def my_loans(page_data: PageData) -> None:
         ),
     )
     
-    # Main content
-    content = ft.Column(
-        [
-            summary_card,
-            ft.Divider(height=32),
-            loans_list,
-        ],
+    # Create list of all controls for ListView
+    all_controls = [
+        summary_card,
+        ft.Divider(height=32),
+    ]
+    
+    # Add loans content directly to ListView (not as nested Column)
+    if loans:
+        all_controls.append(
+            ft.Text(
+                "Moje iznajmljene knjige",
+                size=24,
+                weight=ft.FontWeight.BOLD,
+                color=ft.Colors.BLUE_900,
+            )
+        )
+        # Add each loan card directly
+        for loan in loans:
+            loan_card = ft.Card(
+                content=ft.Container(
+                    content=ft.Column(
+                        [
+                            ft.Row(
+                                [
+                                    ft.Icon(
+                                        ft.Icons.BOOK,
+                                        color=get_status_color(loan["status"]),
+                                        size=24,
+                                    ),
+                                    ft.Column(
+                                        [
+                                            ft.Text(
+                                                loan["book_title"],
+                                                size=18,
+                                                weight=ft.FontWeight.BOLD,
+                                            ),
+                                            ft.Text(
+                                                f"Autor: {loan['book_author']}",
+                                                size=14,
+                                                color=ft.Colors.GREY_600,
+                                            ),
+                                            ft.Text(
+                                                f"Iznajmljeno: {format_date(loan['loan_date'])}",
+                                                size=12,
+                                                color=ft.Colors.GREY_500,
+                                            ),
+                                        ],
+                                        expand=True,
+                                    ),
+                                    ft.Column(
+                                        [item for item in [
+                                            ft.Text(
+                                                get_status_text(loan["status"]),
+                                                size=12,
+                                                color=get_status_color(loan["status"]),
+                                                weight=ft.FontWeight.BOLD,
+                                            ),
+                                            ft.Text(
+                                                f"Vraćanje: {format_date(loan['due_date'])}",
+                                                size=10,
+                                                color=ft.Colors.GREY_500,
+                                            ),
+                                        ] if item is not None],
+                                        horizontal_alignment=ft.CrossAxisAlignment.END,
+                                    ),
+                                ],
+                                spacing=16,
+                            ),
+                            ft.Row(
+                                [button for button in [
+                                    ft.TextButton(
+                                        "Produži",
+                                        icon=ft.Icons.REFRESH,
+                                        on_click=lambda e, l=loan: renew_loan(l["id"]),
+                                    ) if loan["status"] == "active" else None,
+                                    ft.TextButton(
+                                        "Vrati",
+                                        icon=ft.Icons.CHECK_CIRCLE,
+                                        on_click=lambda e, l=loan: return_book(l["id"]),
+                                    ) if loan["status"] == "active" else None,
+                                ] if button is not None],
+                                alignment=ft.MainAxisAlignment.END,
+                            ),
+                        ],
+                        spacing=12,
+                    ),
+                    padding=16,
+                ),
+            )
+            all_controls.append(loan_card)
+    else:
+        all_controls.extend([
+            ft.Text(
+                "Moje iznajmljene knjige",
+                size=24,
+                weight=ft.FontWeight.BOLD,
+                color=ft.Colors.BLUE_900,
+            ),
+            ft.Card(
+                content=ft.Container(
+                    content=ft.Column([
+                        ft.Icon(ft.Icons.BOOK, size=48, color=ft.Colors.GREY_400),
+                        ft.Text(
+                            "Nemate iznajmljenih knjiga",
+                            size=16,
+                            color=ft.Colors.GREY_600,
+                            text_align=ft.TextAlign.CENTER,
+                        ),
+                    ], alignment=ft.MainAxisAlignment.CENTER, horizontal_alignment=ft.CrossAxisAlignment.CENTER),
+                    padding=40,
+                ),
+            )
+        ])
+    
+    # Add bottom spacing
+    all_controls.append(ft.Container(height=50))
+    
+    # Main content with ListView for proper scrolling (like dashboard)
+    content = ft.ListView(
+        controls=all_controls,
         spacing=16,
-        scroll=ft.ScrollMode.AUTO,
+        expand=True,
     )
     
     return ft.Column([
@@ -328,6 +438,5 @@ def my_loans(page_data: PageData) -> None:
             content=content,
             padding=20,
             expand=True,
-
         )
-    ])
+    ], expand=True)

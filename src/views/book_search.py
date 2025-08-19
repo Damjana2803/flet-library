@@ -409,11 +409,12 @@ def book_search(page_data: PageData) -> None:
         width=200,
     )
     
-    # Results column
+    # Results column with ListView for better scrolling
     results_column = ft.Container(
-        content=ft.Column(
+        content=ft.ListView(
+            controls=[],
             spacing=16,
-            scroll=ft.ScrollMode.AUTO,
+            expand=True,
         ),
         height=500,  # Fixed height to enable scrolling
         expand=True,

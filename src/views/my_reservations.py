@@ -260,15 +260,123 @@ def my_reservations(page_data: PageData) -> None:
         ),
     )
     
-    # Main content
-    content = ft.Column(
-        [
-            summary_card,
-            ft.Divider(height=32),
-            reservations_list,
-        ],
+    # Create list of all controls for ListView
+    all_controls = [
+        summary_card,
+        ft.Divider(height=32),
+        ft.Text(
+            "Moje rezervacije",
+            size=24,
+            weight=ft.FontWeight.BOLD,
+            color=ft.Colors.BLUE_900,
+        ),
+    ]
+    
+    # Add reservation cards directly to ListView
+    if reservations:
+        for reservation in reservations:
+            reservation_card = ft.Card(
+                content=ft.Container(
+                    content=ft.Column(
+                        [
+                            ft.Row(
+                                [
+                                    ft.Icon(
+                                        ft.Icons.BOOKMARK,
+                                        color=get_status_color(reservation["status"], reservation["is_expired"]),
+                                        size=24,
+                                    ),
+                                    ft.Column(
+                                        [
+                                            ft.Text(
+                                                reservation["book_title"],
+                                                size=18,
+                                                weight=ft.FontWeight.BOLD,
+                                            ),
+                                            ft.Text(
+                                                f"Autor: {reservation['book_author']}",
+                                                size=14,
+                                                color=ft.Colors.GREY_600,
+                                            ),
+                                            ft.Text(
+                                                f"Rezervisano: {format_date(reservation['reservation_date'])}",
+                                                size=12,
+                                                color=ft.Colors.GREY_500,
+                                            ),
+                                        ],
+                                        expand=True,
+                                    ),
+                                    ft.Column(
+                                        [item for item in [
+                                            ft.Text(
+                                                get_status_text(reservation["status"], reservation["is_expired"]),
+                                                size=12,
+                                                color=get_status_color(reservation["status"], reservation["is_expired"]),
+                                                weight=ft.FontWeight.BOLD,
+                                            ),
+                                            ft.Text(
+                                                f"Ističe: {format_date(reservation['expiry_date'])}",
+                                                size=10,
+                                                color=ft.Colors.GREY_500,
+                                            ) if not reservation["is_expired"] else ft.Text(
+                                                "Rezervacija je istekla",
+                                                size=10,
+                                                color=ft.Colors.RED,
+                                            ),
+                                        ] if item is not None],
+                                        horizontal_alignment=ft.CrossAxisAlignment.END,
+                                    ),
+                                ],
+                                spacing=16,
+                            ),
+                            ft.Row(
+                                [button for button in [
+                                    ft.TextButton(
+                                        "Otkaži",
+                                        icon=ft.Icons.CANCEL,
+                                        on_click=lambda e, r=reservation: cancel_reservation(r["id"]),
+                                    ) if reservation["status"] == "active" and not reservation["is_expired"] else None,
+                                    ft.TextButton(
+                                        "Produži",
+                                        icon=ft.Icons.REFRESH,
+                                        on_click=lambda e, r=reservation: renew_reservation(r["id"]),
+                                    ) if reservation["status"] == "active" and not reservation["is_expired"] else None,
+                                ] if button is not None],
+                                alignment=ft.MainAxisAlignment.END,
+                            ),
+                        ],
+                        spacing=12,
+                    ),
+                    padding=16,
+                ),
+            )
+            all_controls.append(reservation_card)
+    else:
+        all_controls.append(
+            ft.Card(
+                content=ft.Container(
+                    content=ft.Column([
+                        ft.Icon(ft.Icons.BOOKMARK, size=48, color=ft.Colors.GREY_400),
+                        ft.Text(
+                            "Nemate aktivnih rezervacija",
+                            size=16,
+                            color=ft.Colors.GREY_600,
+                            text_align=ft.TextAlign.CENTER,
+                        ),
+                    ], alignment=ft.MainAxisAlignment.CENTER, horizontal_alignment=ft.CrossAxisAlignment.CENTER),
+                    padding=40,
+                ),
+            )
+        )
+    
+    # Add bottom spacing
+    all_controls.append(ft.Container(height=50))
+    
+    # Main content with ListView for proper scrolling (like dashboard)
+    content = ft.ListView(
+        controls=all_controls,
         spacing=16,
-        scroll=ft.ScrollMode.AUTO,
+        expand=True,
     )
     
     return ft.Column([
@@ -277,6 +385,5 @@ def my_reservations(page_data: PageData) -> None:
             content=content,
             padding=20,
             expand=True,
-
         )
-    ])
+    ], expand=True)

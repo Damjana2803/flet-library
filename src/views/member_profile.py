@@ -1,7 +1,8 @@
 import flet as ft
 from flet_navigator import PageData
 from components.navbar import NavBar
-from components.snack_bar import SnackBar
+from components.snack_bar import show_snack_bar
+from utils.global_state import global_state
 
 def member_profile(page_data: PageData) -> None:
     page = page_data.page
@@ -10,21 +11,54 @@ def member_profile(page_data: PageData) -> None:
     # Navigation bar
     navbar_content = NavBar("member", page_data)
     
-    # Sample member data
-    member_data = {
-        "first_name": "Petar",
-        "last_name": "Petrović",
-        "email": "petar@email.com",
-        "phone": "+381 60 123 4567",
-        "address": "Knez Mihailova 15, 11000 Beograd",
-        "membership_number": "MEM-2024-001",
-        "membership_type": "regular",
-        "membership_status": "active",
-        "membership_start_date": "15.01.2024",
-        "membership_end_date": "15.01.2025",
-        "current_loans": 3,
-        "max_loans": 5
-    }
+    # Get current logged-in member data (same logic as member_dashboard)
+    current_user = global_state.get_user()
+    current_member = None
+    
+    if current_user and not current_user.get('is_admin', False):
+        # For member users, the login_data already contains member information
+        current_member = current_user
+    elif current_user:
+        # Fallback: search by email in members list
+        current_user_email = current_user.get('email')
+        if current_user_email:
+            for member in global_state.members:
+                if member.get('email') == current_user_email:
+                    current_member = member
+                    break
+    
+    # Use real member data or fallback to default
+    if current_member:
+        member_data = {
+            "first_name": current_member.get("first_name", "Nepoznato"),
+            "last_name": current_member.get("last_name", ""),
+            "email": current_member.get("email", ""),
+            "phone": current_member.get("phone", ""),
+            "address": current_member.get("address", ""),
+            "membership_number": current_member.get("membership_number", ""),
+            "membership_type": current_member.get("membership_type", "regular"),
+            "membership_status": current_member.get("membership_status", "active"),
+            "membership_start_date": current_member.get("membership_start_date", ""),
+            "membership_end_date": current_member.get("membership_end_date", ""),
+            "current_loans": current_member.get("current_loans", 0),
+            "max_loans": current_member.get("max_loans", 5)
+        }
+    else:
+        # Fallback data
+        member_data = {
+            "first_name": "Nepoznato",
+            "last_name": "",
+            "email": "nema.email@biblioteka.rs",
+            "phone": "N/A",
+            "address": "N/A",
+            "membership_number": "N/A",
+            "membership_type": "regular",
+            "membership_status": "active",
+            "membership_start_date": "N/A",
+            "membership_end_date": "N/A",
+            "current_loans": 0,
+            "max_loans": 5
+        }
     
     def edit_profile(e):
         # Show edit profile dialog
@@ -76,9 +110,7 @@ def member_profile(page_data: PageData) -> None:
     
     def save_profile():
         # In a real app, this would save to database
-        page.overlay.append(
-            SnackBar("Profil je uspešno ažuriran!", duration=3000)
-        )
+        show_snack_bar(page, "Profil je uspešno ažuriran!", "SUCCESS")
         close_dialog()
         page.update()
     
@@ -121,9 +153,7 @@ def member_profile(page_data: PageData) -> None:
     
     def save_password():
         # In a real app, this would validate and save password
-        page.overlay.append(
-            SnackBar("Lozinka je uspešno promenjena!", duration=3000)
-        )
+        show_snack_bar(page, "Lozinka je uspešno promenjena!", "SUCCESS")
         close_dialog()
         page.update()
     
@@ -296,9 +326,9 @@ def member_profile(page_data: PageData) -> None:
         ),
     )
     
-    # Main content
-    content = ft.Column(
-        [
+    # Main content with ListView for proper scrolling
+    content = ft.ListView(
+        controls=[
             profile_header,
             ft.Divider(height=32),
             personal_info,
@@ -306,9 +336,10 @@ def member_profile(page_data: PageData) -> None:
             membership_info,
             ft.Divider(height=16),
             actions_card,
+            ft.Container(height=50),  # Bottom spacing
         ],
         spacing=16,
-        scroll=ft.ScrollMode.AUTO,
+        expand=True,
     )
     
     return ft.Column([
