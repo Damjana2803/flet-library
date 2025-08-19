@@ -22,7 +22,7 @@ def NavBar(user_type="member", page_data=None):
                 ft.NavigationBarDestination(icon=ft.Icons.DASHBOARD, label='Dashboard'),
                 ft.NavigationBarDestination(icon=ft.Icons.BOOK, label='Knjige'),
                 ft.NavigationBarDestination(icon=ft.Icons.PEOPLE, label='Članovi'),
-                ft.NavigationBarDestination(icon=ft.Icons.LIBRARY_BOOKS, label='Iznajmljivanje'),
+                ft.NavigationBarDestination(icon=ft.Icons.LIBRARY_BOOKS, label='Pozajmica'),
                 ft.NavigationBarDestination(icon=ft.Icons.ANALYTICS, label='Statistike'),
             ]
         else:  # member
@@ -48,7 +48,7 @@ def NavBar(user_type="member", page_data=None):
             ft.NavigationBarDestination(icon=ft.Icons.DASHBOARD, label='Dashboard'),
             ft.NavigationBarDestination(icon=ft.Icons.BOOK, label='Knjige'),
             ft.NavigationBarDestination(icon=ft.Icons.PEOPLE, label='Članovi'),
-            ft.NavigationBarDestination(icon=ft.Icons.LIBRARY_BOOKS, label='Iznajmljivanje'),
+            ft.NavigationBarDestination(icon=ft.Icons.LIBRARY_BOOKS, label='Pozajmica'),
             ft.NavigationBarDestination(icon=ft.Icons.ANALYTICS, label='Statistike'),
         ]
     else:  # member

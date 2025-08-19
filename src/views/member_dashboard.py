@@ -8,6 +8,9 @@ def member_dashboard_screen(page_data: PageData) -> None:
     page = page_data.page
     page.title = "Dashboard - Biblioteka"
     
+    # Check if mobile screen
+    is_mobile = page.width < 768 if page.width else False
+    
     # Navigation bar
     navbar_content = NavBar("member", page_data)
     
@@ -64,56 +67,60 @@ def member_dashboard_screen(page_data: PageData) -> None:
     available_books = len([book for book in books if book.get('available_copies', 0) > 0])
     
     # Quick stats row
-    quick_stats = ft.Row(
-        [
-            ft.Card(
-                content=ft.Container(
-                    content=ft.Column(
-                        [
-                            ft.Text("Aktivne pozajmice", size=14, color=ft.Colors.GREY_600),
-                            ft.Text(str(user.get('current_loans', 0)), size=24, weight=ft.FontWeight.BOLD, color=ft.Colors.ORANGE),
-                            ft.Text(f"od {user.get('max_loans', 5)} maksimalno", size=12, color=ft.Colors.GREY_500),
-                        ],
-                        spacing=8,
-                        alignment=ft.MainAxisAlignment.CENTER,
-                    ),
-                    padding=20,
+    # Stats cards 
+    stats_cards = [
+        ft.Card(
+            content=ft.Container(
+                content=ft.Column(
+                    [
+                        ft.Text("Aktivne pozajmice", size=14, color=ft.Colors.GREY_600),
+                        ft.Text(str(user.get('current_loans', 0)), size=24, weight=ft.FontWeight.BOLD, color=ft.Colors.ORANGE),
+                        ft.Text(f"od {user.get('max_loans', 5)} maksimalno", size=12, color=ft.Colors.GREY_500),
+                    ],
+                    spacing=8,
+                    alignment=ft.MainAxisAlignment.CENTER,
                 ),
-                expand=True,
+                padding=20,
             ),
-            ft.Card(
-                content=ft.Container(
-                    content=ft.Column(
-                        [
-                            ft.Text("Dostupno knjiga", size=14, color=ft.Colors.GREY_600),
-                            ft.Text(str(available_books), size=24, weight=ft.FontWeight.BOLD, color=ft.Colors.BLUE),
-                            ft.Text("u biblioteci", size=12, color=ft.Colors.GREY_500),
-                        ],
-                        spacing=8,
-                        alignment=ft.MainAxisAlignment.CENTER,
-                    ),
-                    padding=20,
+            expand=True,
+        ),
+        ft.Card(
+            content=ft.Container(
+                content=ft.Column(
+                    [
+                        ft.Text("Dostupno knjiga", size=14, color=ft.Colors.GREY_600),
+                        ft.Text(str(available_books), size=24, weight=ft.FontWeight.BOLD, color=ft.Colors.BLUE),
+                        ft.Text("u biblioteci", size=12, color=ft.Colors.GREY_500),
+                    ],
+                    spacing=8,
+                    alignment=ft.MainAxisAlignment.CENTER,
                 ),
-                expand=True,
+                padding=20,
             ),
-            ft.Card(
-                content=ft.Container(
-                    content=ft.Column(
-                        [
-                            ft.Text("Tip članstva", size=14, color=ft.Colors.GREY_600),
-                            ft.Text(user.get('membership_type', 'Regular').title(), size=24, weight=ft.FontWeight.BOLD, color=ft.Colors.GREEN),
-                            ft.Text(user.get('membership_number', 'N/A'), size=12, color=ft.Colors.GREY_500),
-                        ],
-                        spacing=8,
-                        alignment=ft.MainAxisAlignment.CENTER,
-                    ),
-                    padding=20,
+            expand=True,
+        ),
+        ft.Card(
+            content=ft.Container(
+                content=ft.Column(
+                    [
+                        ft.Text("Tip članstva", size=14, color=ft.Colors.GREY_600),
+                        ft.Text(user.get('membership_type', 'Regular').title(), size=24, weight=ft.FontWeight.BOLD, color=ft.Colors.GREEN),
+                        ft.Text(user.get('membership_number', 'N/A'), size=12, color=ft.Colors.GREY_500),
+                    ],
+                    spacing=8,
+                    alignment=ft.MainAxisAlignment.CENTER,
                 ),
-                expand=True,
+                padding=20,
             ),
-        ],
-        spacing=16,
-    )
+            expand=True,
+        ),
+    ]
+    
+    # Mobile: stack cards vertically, Desktop: horizontal row
+    if is_mobile:
+        quick_stats = ft.Column(stats_cards, spacing=16)
+    else:
+        quick_stats = ft.Row(stats_cards, spacing=16)
     
     # Main content using ListView for proper scrolling
     content = ft.ListView(

@@ -9,6 +9,10 @@ def admin_statistics(page_data: PageData) -> None:
     page = page_data.page
     page.title = "Statistike - Biblioteka"
     
+    # Check if mobile screen
+    page_width = page.width if page.width else 1200
+    is_mobile = page_width < 768
+    
     # Navigation bar
     navbar_content = NavBar("admin", page_data)
     
@@ -84,54 +88,63 @@ def admin_statistics(page_data: PageData) -> None:
         )
         page.update()
     
-    # Statistics cards
+    # Statistics cards - responsive
     def create_stat_card(title, value, icon, color):
         return ft.Card(
             content=ft.Container(
                 content=ft.Column(
                     [
-                        ft.Icon(icon, size=32, color=color),
+                        ft.Icon(icon, size=28 if is_mobile else 32, color=color),
                         ft.Text(
                             str(value),
-                            size=32,
+                            size=28 if is_mobile else 32,
                             weight=ft.FontWeight.BOLD,
                             color=color,
                         ),
                         ft.Text(
                             title,
-                            size=14,
+                            size=12 if is_mobile else 14,
                             color=ft.Colors.GREY_600,
                             text_align=ft.TextAlign.CENTER,
                         ),
                     ],
-                    spacing=8,
+                    spacing=6 if is_mobile else 8,
                     alignment=ft.MainAxisAlignment.CENTER,
                     horizontal_alignment=ft.CrossAxisAlignment.CENTER,
                 ),
-                padding=20,
+                padding=15 if is_mobile else 20,
                 alignment=ft.alignment.center,
             ),
             expand=True,
         )
     
-    # Main statistics row
-    stats_row = ft.Row(
-        [
+    # Main statistics - responsive layout (2 rows of 2 cards each)
+    if is_mobile:
+        # Mobile: Stack all cards vertically
+        stats_layout = ft.Column([
             create_stat_card("Ukupno knjiga", stats_data["total_books"], ft.Icons.BOOK, ft.Colors.BLUE),
             create_stat_card("Dostupno knjiga", stats_data["available_books"], ft.Icons.CHECK_CIRCLE, ft.Colors.GREEN),
             create_stat_card("Aktivnih članova", stats_data["active_members"], ft.Icons.PEOPLE, ft.Colors.ORANGE),
             create_stat_card("Iznajmljeno", stats_data["active_loans"], ft.Icons.LIBRARY_BOOKS, ft.Colors.PURPLE),
-        ],
-        spacing=16,
-    )
-    
-    # Additional statistics row
-    additional_stats_row = ft.Row(
-        [
             create_stat_card("Ukupno članova", stats_data["total_members"], ft.Icons.GROUP, ft.Colors.TEAL),
-        ],
-        spacing=16,
-    )
+        ], spacing=12)
+    else:
+        # Desktop: 2 rows of 2 cards each, plus one more
+        first_row = ft.Row([
+            create_stat_card("Ukupno knjiga", stats_data["total_books"], ft.Icons.BOOK, ft.Colors.BLUE),
+            create_stat_card("Dostupno knjiga", stats_data["available_books"], ft.Icons.CHECK_CIRCLE, ft.Colors.GREEN),
+        ], spacing=16)
+        
+        second_row = ft.Row([
+            create_stat_card("Aktivnih članova", stats_data["active_members"], ft.Icons.PEOPLE, ft.Colors.ORANGE),
+            create_stat_card("Iznajmljeno", stats_data["active_loans"], ft.Icons.LIBRARY_BOOKS, ft.Colors.PURPLE),
+        ], spacing=16)
+        
+        third_row = ft.Row([
+            create_stat_card("Ukupno članova", stats_data["total_members"], ft.Icons.GROUP, ft.Colors.TEAL),
+        ], spacing=16)
+        
+        stats_layout = ft.Column([first_row, second_row, third_row], spacing=16)
     
     # Popular books list
     popular_books_list = ft.Column(
@@ -192,52 +205,72 @@ def admin_statistics(page_data: PageData) -> None:
     
 
     
-    # Main content
-    content = ft.Column(
-        [
-            ft.Row(
-                [
-                    ft.Text(
-                        "Statistike biblioteke",
-                        size=32,
-                        weight=ft.FontWeight.BOLD,
-                        color=ft.Colors.BLUE_900,
-                    ),
-                    ft.ElevatedButton(
-                        "Izvezi izveštaj",
-                        icon=ft.Icons.DOWNLOAD,
-                        on_click=export_report,
-                    ),
-                ],
-                alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
+    # Header section - responsive
+    if is_mobile:
+        header_section = ft.Column([
+            ft.Text(
+                "Statistike biblioteke",
+                size=24,
+                weight=ft.FontWeight.BOLD,
+                color=ft.Colors.BLUE_900,
             ),
-            ft.Divider(height=32),
-            stats_row,
-            ft.Divider(height=16),
-            additional_stats_row,
-            ft.Divider(height=32),
-            ft.Row(
-                [
-                    ft.Column([popular_books_list], expand=True),
-                    ft.VerticalDivider(width=32),
-                    ft.Column([membership_chart], expand=True),
-                ],
-                spacing=32,
+            ft.ElevatedButton(
+                "Izvezi izveštaj",
+                icon=ft.Icons.DOWNLOAD,
+                on_click=export_report,
+                expand=True,
+                height=45,
             ),
+        ], spacing=12)
+    else:
+        header_section = ft.Row([
+            ft.Text(
+                "Statistike biblioteke",
+                size=32,
+                weight=ft.FontWeight.BOLD,
+                color=ft.Colors.BLUE_900,
+            ),
+            ft.ElevatedButton(
+                "Izvezi izveštaj",
+                icon=ft.Icons.DOWNLOAD,
+                on_click=export_report,
+            ),
+        ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN)
 
-        ],
-        spacing=16,
-        scroll=ft.ScrollMode.AUTO,
-        expand=True,
-    )
+    # Bottom section - responsive
+    if is_mobile:
+        bottom_section = ft.Column([
+            popular_books_list,
+            ft.Divider(height=24),
+            membership_chart,
+        ], spacing=20)
+    else:
+        bottom_section = ft.Row([
+            ft.Column([popular_books_list], expand=True),
+            ft.VerticalDivider(width=32),
+            ft.Column([membership_chart], expand=True),
+        ], spacing=32)
+
+    # Main content - use ListView for better scrolling
+    all_content = [
+        header_section,
+        ft.Divider(height=32),
+        stats_layout,
+        ft.Divider(height=32),
+        bottom_section,
+        ft.Container(height=50)  # Bottom spacing
+    ]
     
     return ft.Column([
         navbar_content,
         ft.Container(
-            content=content,
-            padding=20,
+            content=ft.ListView(
+                controls=all_content,
+                spacing=16,
+                padding=ft.padding.all(15 if is_mobile else 20),
+            ),
             expand=True,
             height=600,
-
         )
     ], expand=True)
+

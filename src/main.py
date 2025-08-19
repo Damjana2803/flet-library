@@ -52,7 +52,7 @@ def admin_members(page_data: PageData) -> None:
 
 @route
 def admin_loans(page_data: PageData) -> None:
-	admin_guard(page_data, 'Biblioteka Admin | Iznajmljivanje', lambda pd: admin_loans_content(pd))
+	admin_guard(page_data, 'Biblioteka Admin | Pozajmica', lambda pd: admin_loans_content(pd))
 
 @route
 def admin_statistics(page_data: PageData) -> None:

@@ -9,6 +9,9 @@ def admin_books(page_data: PageData):
     page = page_data.page
     page.title = "Upravljanje knjigama - Biblioteka"
     
+    # Check if mobile screen
+    is_mobile = page.width < 768 if page.width else False
+    
     # State variables
     books = []
     search_query = ft.TextField(
@@ -325,7 +328,50 @@ def admin_books(page_data: PageData):
         if books_to_show is None:
             books_to_show = books
         
-        # Convert books to table format
+        # Mobile: use cards instead of table, Desktop: use DataTable
+        if is_mobile:
+            update_books_cards(books_to_show)
+        else:
+            update_books_datatable(books_to_show)
+    
+    def update_books_cards(books_to_show):
+        """Mobile-friendly card layout"""
+        books_container.controls.clear()
+        
+        for book in books_to_show:
+            card = ft.Card(
+                content=ft.Container(
+                    content=ft.Column([
+                        ft.Text(book.get('title', ''), size=16, weight=ft.FontWeight.BOLD),
+                        ft.Text(f"Autor: {book.get('author', '')}", size=14),
+                        ft.Text(f"ISBN: {book.get('isbn', '')}", size=12, color=ft.Colors.GREY_600),
+                        ft.Text(f"Kategorija: {book.get('category', '')}", size=12),
+                        ft.Text(f"Kopije: {book.get('available_copies', 0)}/{book.get('total_copies', 0)}", size=12),
+                        ft.Row([
+                            ft.ElevatedButton(
+                                text="Izmeni",
+                                icon=ft.Icons.EDIT,
+                                on_click=lambda e, book_id=book.get('id'): edit_book(book_id),
+                                expand=True
+                            ),
+                            ft.ElevatedButton(
+                                text="Obriši",
+                                icon=ft.Icons.DELETE,
+                                style=ft.ButtonStyle(color=ft.Colors.RED),
+                                on_click=lambda e, book_id=book.get('id'): delete_book_confirm(book_id),
+                                expand=True
+                            )
+                        ], spacing=10)
+                    ], spacing=8),
+                    padding=15
+                )
+            )
+            books_container.controls.append(card)
+        
+        page.update()
+    
+    def update_books_datatable(books_to_show):
+        """Desktop DataTable layout"""
         table_rows = []
         for book in books_to_show:
             table_rows.append(
@@ -409,7 +455,7 @@ def admin_books(page_data: PageData):
         delete_dialog.open = True
         page.update()
     
-    # Create books table
+    # Create books table (desktop) and cards container (mobile)
     books_table = ft.DataTable(
         columns=[
             ft.DataColumn(ft.Text("Naslov")),
@@ -423,35 +469,64 @@ def admin_books(page_data: PageData):
         rows=[]
     )
     
+    # Container for mobile cards
+    books_container = ft.Column([], spacing=16)
+    
     # Load books on page load
     load_books()
     
     # Navigation bar
     navbar_content = NavBar("admin", page_data)
     
-    return ft.Container(
-        content=ft.Column([
-            navbar_content,
-            ft.Card(
-                content=ft.Container(
-                    content=ft.Column([
-                        ft.Row([
-                            ft.Text("Upravljanje knjigama", theme_style=ft.TextThemeStyle.HEADLINE_MEDIUM),
-                            ft.ElevatedButton(
-                                "Dodaj knjigu",
-                                icon=ft.Icons.ADD,
-                                on_click=lambda e: open_add_dialog()
-                            )
-                        ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
-                        ft.Divider(),
-                        search_query,
-                        ft.Divider(),
-                        books_table
-                    ]),
-                    padding=20
+    # Responsive content layout
+    if is_mobile:
+        content_layout = ft.Column([
+            ft.Text("Upravljanje knjigama", size=24, weight=ft.FontWeight.BOLD),
+            ft.ElevatedButton(
+                "Dodaj knjigu",
+                icon=ft.Icons.ADD,
+                on_click=lambda e: open_add_dialog(),
+                expand=True,
+                height=50
+            ),
+            ft.Divider(),
+            search_query,
+            ft.Divider(),
+            books_container  # Mobile: cards
+        ])
+    else:
+        content_layout = ft.Column([
+            ft.Row([
+                ft.Text("Upravljanje knjigama", theme_style=ft.TextThemeStyle.HEADLINE_MEDIUM),
+                ft.ElevatedButton(
+                    "Dodaj knjigu",
+                    icon=ft.Icons.ADD,
+                    on_click=lambda e: open_add_dialog()
                 )
-            )
-        ]),
-        padding=20,
-        expand=True
-    )
+            ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
+            ft.Divider(),
+            search_query,
+            ft.Divider(),
+            books_table  # Desktop: DataTable
+        ])
+    
+    return ft.Column([
+        navbar_content,
+        ft.Container(
+            content=ft.ListView(
+                controls=[
+                    ft.Card(
+                        content=ft.Container(
+                            content=content_layout,
+                            padding=20 if not is_mobile else 10
+                        )
+                    ),
+                    ft.Container(height=50)  # Bottom spacing
+                ],
+                spacing=10,
+                padding=ft.padding.all(20 if not is_mobile else 10),
+            ),
+            expand=True,
+            height=600,
+        )
+    ], expand=True)
