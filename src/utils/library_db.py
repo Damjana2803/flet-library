@@ -442,6 +442,87 @@ def return_loan(loan_id: int) -> Tuple[bool, str]:
             conn.close()
         return False, f"Greška pri vraćanju pozajmice: {str(e)}"
 
+def update_loan(loan_id: int, due_date: str) -> Tuple[bool, str]:
+    """Update a loan (mainly the due date)"""
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        
+        # Check if loan exists
+        cursor.execute("SELECT id, status FROM library_loans WHERE id = ?", (loan_id,))
+        loan_result = cursor.fetchone()
+        
+        if not loan_result:
+            conn.close()
+            return False, "Pozajmica nije pronađena"
+        
+        if loan_result[1] != 'active':
+            conn.close()
+            return False, "Ne možete ažurirati vraćenu pozajmicu"
+        
+        cursor.execute('''
+            UPDATE library_loans 
+            SET due_date = ?, updated_at = ?
+            WHERE id = ?
+        ''', (due_date, datetime.now().isoformat(), loan_id))
+        
+        conn.commit()
+        conn.close()
+        return True, "Pozajmica uspešno ažurirana"
+        
+    except Exception as e:
+        if conn:
+            conn.rollback()
+            conn.close()
+        return False, f"Greška pri ažuriranju pozajmice: {str(e)}"
+
+def delete_loan(loan_id: int) -> Tuple[bool, str]:
+    """Delete a loan (only if not returned)"""
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        
+        # Get loan details
+        cursor.execute('''
+            SELECT book_id, member_id, status FROM library_loans WHERE id = ?
+        ''', (loan_id,))
+        loan_result = cursor.fetchone()
+        
+        if not loan_result:
+            conn.close()
+            return False, "Pozajmica nije pronađena"
+        
+        book_id, member_id, status = loan_result
+        
+        # If loan is active, need to restore book and member counts
+        if status == 'active':
+            # Update book available copies
+            cursor.execute('''
+                UPDATE library_books 
+                SET available_copies = available_copies + 1
+                WHERE id = ?
+            ''', (book_id,))
+            
+            # Update member current loans
+            cursor.execute('''
+                UPDATE library_members 
+                SET current_loans = current_loans - 1
+                WHERE id = ?
+            ''', (member_id,))
+        
+        # Delete the loan
+        cursor.execute("DELETE FROM library_loans WHERE id = ?", (loan_id,))
+        
+        conn.commit()
+        conn.close()
+        return True, "Pozajmica uspešno obrisana"
+        
+    except Exception as e:
+        if conn:
+            conn.rollback()
+            conn.close()
+        return False, f"Greška pri brisanju pozajmice: {str(e)}"
+
 # User authentication
 def authenticate_user(email: str, password_hash: str) -> Optional[Dict]:
     """Authenticate a user"""

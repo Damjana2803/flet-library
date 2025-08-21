@@ -18,6 +18,8 @@ from utils.library_db import (
     get_all_loans as db_get_all_loans,
     create_loan as db_create_loan,
     return_loan as db_return_loan,
+    update_loan as db_update_loan,
+    delete_loan as db_delete_loan,
     get_library_statistics as db_get_library_statistics
 )
 
@@ -105,6 +107,14 @@ def return_loan(loan_id):
 def get_all_loans():
     """Get all loans from the library"""
     return db_get_all_loans()
+
+def update_loan(loan_id, due_date):
+    """Update a loan"""
+    return db_update_loan(loan_id, due_date)
+
+def delete_loan(loan_id):
+    """Delete a loan"""
+    return db_delete_loan(loan_id)
 
 def get_library_statistics():
     """Get library statistics"""
