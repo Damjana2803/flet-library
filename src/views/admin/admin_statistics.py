@@ -215,13 +215,13 @@ def admin_statistics(page_data: PageData) -> None:
                 weight=ft.FontWeight.BOLD,
                 color=ft.Colors.BLUE_900,
             ),
-            ft.ElevatedButton(
-                "Izvezi izveštaj",
-                icon=ft.Icons.DOWNLOAD,
-                on_click=export_report,
-                expand=True,
-                height=45,
-            ),
+            # ft.ElevatedButton(
+            #     "Izvezi izveštaj",
+            #     icon=ft.Icons.DOWNLOAD,
+            #     on_click=export_report,
+            #     expand=True,
+            #     height=45,
+            # ),
         ], spacing=12)
     else:
         header_section = ft.Row([
@@ -231,11 +231,11 @@ def admin_statistics(page_data: PageData) -> None:
                 weight=ft.FontWeight.BOLD,
                 color=ft.Colors.BLUE_900,
             ),
-            ft.ElevatedButton(
-                "Izvezi izveštaj",
-                icon=ft.Icons.DOWNLOAD,
-                on_click=export_report,
-            ),
+            # ft.ElevatedButton(
+            #     "Izvezi izveštaj",
+            #     icon=ft.Icons.DOWNLOAD,
+            #     on_click=export_report,
+            # ),
         ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN)
 
     # Bottom section - responsive

@@ -3,7 +3,7 @@ from flet_navigator import PageData
 from components.navbar import NavBar
 from components.responsive_card import ResponsiveCard
 from components.snack_bar import SnackBar
-from utils.global_state import global_state
+from controllers.admin_controller import get_all_books, get_all_members, get_all_loans, get_library_statistics
 
 def admin_dashboard(page_data: PageData) -> None:
     page = page_data.page
@@ -62,17 +62,19 @@ def admin_dashboard(page_data: PageData) -> None:
         on_click=navigate_to_statistics
     )
     
-    # Get real data from global state
-    books = global_state.get("books", [])
-    members = global_state.get("members", [])
-    loans = global_state.get("loans", [])
+    # Get real data from database
+    books = get_all_books()
+    members = get_all_members()
+    loans = get_all_loans()
     
-    # Calculate statistics
-    total_books = len(books)
-    total_members = len(members)
-    active_loans = len([loan for loan in loans if loan['status'] == 'active'])
-
-    available_books = len([book for book in books if book['available_copies'] > 0])
+    # Get statistics from database
+    stats = get_library_statistics()
+    
+    # Calculate statistics from database
+    total_books = stats.get('total_books', 0)
+    available_books = stats.get('available_books', 0)
+    total_members = stats.get('total_members', 0)
+    active_loans = stats.get('active_loans', 0)
     
     # Quick stats row
     # Stats cards
@@ -222,6 +224,6 @@ def admin_dashboard(page_data: PageData) -> None:
         ft.Container(
             content=content,
             padding=20,
-            height=600,  # Fixed height to enable scrolling
+            expand=True,
         )
     ], expand=True)
