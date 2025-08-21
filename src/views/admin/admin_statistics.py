@@ -2,7 +2,7 @@ import flet as ft
 from flet_navigator import PageData
 from components.navbar import NavBar
 from components.snack_bar import SnackBar
-from utils.global_state import global_state
+from controllers.admin_controller import get_all_books, get_all_members, get_all_loans, get_library_statistics
 from datetime import datetime, timedelta
 
 def admin_statistics(page_data: PageData) -> None:
@@ -16,25 +16,26 @@ def admin_statistics(page_data: PageData) -> None:
     # Navigation bar
     navbar_content = NavBar("admin", page_data)
     
-    # Get real data from global state
-    books = global_state.get("books", [])
-    members = global_state.get("members", [])
-    loans = global_state.get("loans", [])
+    # Get real data from database
+    books = get_all_books()
+    members = get_all_members()
+    loans = get_all_loans()
     
-    # Calculate real statistics
-    total_books = len(books)
-    total_members = len(members)
-    active_loans = len([loan for loan in loans if loan.get('status') == 'active'])
+    # Get statistics from database
+    stats = get_library_statistics()
     
-    # Calculate available books
-    available_books = len([book for book in books if book.get('available_copies', 0) > 0])
+    # Use database statistics
+    total_books = stats.get('total_books', 0)
+    available_books = stats.get('available_books', 0)
+    total_members = stats.get('total_members', 0)
+    active_loans = stats.get('active_loans', 0)
     
-    # Calculate member types
+    # Calculate member types from database
     student_members = len([m for m in members if m.get('membership_type') == 'student'])
     regular_members = len([m for m in members if m.get('membership_type') == 'regular'])
     senior_members = len([m for m in members if m.get('membership_type') == 'senior'])
     
-    # Calculate active members
+    # Calculate active members from database
     active_members = len([m for m in members if m.get('membership_status') == 'active'])
     
     # Real statistics data
