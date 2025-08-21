@@ -31,6 +31,142 @@ def admin_books(page_data: PageData):
     copies_field = ft.TextField(label="Broj primeraka *", hint_text="Unesite broj primeraka")
     location_field = ft.TextField(label="Lokacija", hint_text="Unesite lokaciju")
     
+    # FUNCTION DEFINITIONS FIRST
+    def open_add_dialog():
+        print("DEBUG: open_add_dialog() pozvan!")  # Debug
+        try:
+            page.dialog = add_dialog
+            add_dialog.open = True
+            page.update()
+            print("DEBUG: Dialog je uspešno otvoren!")  # Debug
+        except Exception as e:
+            print(f"DEBUG: Greška pri otvaranju dialoga: {str(e)}")  # Debug
+
+    def close_add_dialog():
+        add_dialog.open = False
+        page.update()
+
+    def save_book():
+        print("DEBUG: save_book() pozvan!")  # Debug
+        try:
+            # Validate required fields
+            if not title_field.value or not author_field.value or not isbn_field.value:
+                show_snack_bar(page, "Molimo popunite sva obavezna polja", "ERROR")
+                return
+            
+            # Convert year to int (remove any trailing dots or spaces)
+            try:
+                year_str = year_field.value.strip().rstrip('.')
+                year = int(year_str)
+            except ValueError:
+                show_snack_bar(page, "Godina izdanja mora biti broj", "ERROR")
+                return
+            
+            # Convert copies to int (remove any trailing dots or spaces)
+            try:
+                copies_str = copies_field.value.strip().rstrip('.')
+                copies = int(copies_str)
+            except ValueError:
+                show_snack_bar(page, "Broj primeraka mora biti broj", "ERROR")
+                return
+            
+            # Add book
+            success, message = add_book(
+                title=title_field.value,
+                author=author_field.value,
+                isbn=isbn_field.value,
+                category=category_field.value or "Opšta",
+                publication_year=year,
+                publisher=publisher_field.value or "Nepoznato",
+                description=description_field.value or "",
+                total_copies=copies,
+                location=location_field.value or "Glavna biblioteka"
+            )
+            
+            if success:
+                show_snack_bar(page, "Knjiga uspešno dodata!", "SUCCESS")
+                close_add_dialog()
+                clear_dialog_fields()
+                load_books()  # Refresh the list
+            else:
+                show_snack_bar(page, f"Greška: {message}", "ERROR")
+                
+        except Exception as e:
+            show_snack_bar(page, f"Greška: {str(e)}", "ERROR")
+
+    def clear_dialog_fields():
+        title_field.value = ""
+        author_field.value = ""
+        isbn_field.value = ""
+        category_field.value = ""
+        year_field.value = ""
+        publisher_field.value = ""
+        description_field.value = ""
+        copies_field.value = ""
+        location_field.value = ""
+        page.update()
+    
+    def test_button_click():
+        print("🔥 DUGME JE KLIKNUTO! 🔥")  # Debug
+        show_snack_bar(page, "Dugme radi! Kreiram novi dialog...", "SUCCESS")
+        
+        # Kreiraj potpuno novi dialog svaki put
+        new_dialog = ft.AlertDialog(
+            title=ft.Text("Dodaj novu knjigu"),
+            content=ft.Column([
+                ft.TextField(label="Naslov", hint_text="Unesite naslov knjige", ref=ft.Ref()),
+                ft.TextField(label="Autor", hint_text="Unesite autora", ref=ft.Ref()),
+                ft.TextField(label="ISBN", hint_text="Unesite ISBN", ref=ft.Ref()),
+                ft.TextField(label="Kategorija", hint_text="Unesite kategoriju", ref=ft.Ref()),
+                ft.TextField(label="Godina", hint_text="Unesite godinu", ref=ft.Ref()),
+                ft.TextField(label="Izdavač", hint_text="Unesite izdavača", ref=ft.Ref()),
+                ft.TextField(label="Broj primeraka", hint_text="Unesite broj", ref=ft.Ref()),
+                ft.TextField(label="Lokacija", hint_text="Unesite lokaciju", ref=ft.Ref()),
+            ], scroll=ft.ScrollMode.AUTO, height=400),
+            actions=[
+                ft.TextButton("Otkaži", on_click=lambda e: close_dialog(new_dialog)),
+                ft.TextButton("Testni dodaj", on_click=lambda e: test_save(new_dialog))
+            ],
+            actions_alignment=ft.MainAxisAlignment.END,
+        )
+        
+        # Otvori dialog
+        page.dialog = new_dialog
+        new_dialog.open = True
+        page.update()
+        print("✅ Dialog kreiran i otvoren!")
+    
+    def close_dialog(dialog):
+        dialog.open = False
+        page.update()
+        print("❌ Dialog zatvoren!")
+    
+    def test_save(dialog):
+        print("💾 Test save pozvan!")
+        show_snack_bar(page, "Test! Funkcija za čuvanje radi!", "SUCCESS")
+        close_dialog(dialog)
+    
+    # Add book dialog
+    add_dialog = ft.AlertDialog(
+        title=ft.Text("Dodaj novu knjigu"),
+        content=ft.Column([
+            title_field,
+            author_field,
+            isbn_field,
+            category_field,
+            year_field,
+            publisher_field,
+            description_field,
+            copies_field,
+            location_field
+        ], scroll=ft.ScrollMode.AUTO, height=400),
+        actions=[
+            ft.TextButton("Otkaži", on_click=lambda e: close_add_dialog()),
+            ft.TextButton("Dodaj", on_click=lambda e: save_book())
+        ],
+        actions_alignment=ft.MainAxisAlignment.END,
+    )
+    
     # Edit book dialog fields
     edit_title_field = ft.TextField(label="Naslov *", hint_text="Unesite naslov knjige")
     edit_author_field = ft.TextField(label="Autor *", hint_text="Unesite ime autora")
@@ -42,27 +178,28 @@ def admin_books(page_data: PageData):
     edit_copies_field = ft.TextField(label="Broj primeraka *", hint_text="Unesite broj primeraka")
     edit_location_field = ft.TextField(label="Lokacija", hint_text="Unesite lokaciju")
     
-    def open_add_dialog():
-        print("🖱️ DUGME KLIKNUTO! open_add_dialog() pozvan!")
-        try:
-            # Show a snack bar to confirm the function is called
-            show_snack_bar(page, "🖱️ Dugme je kliknuto! Otvaram dialog...", "INFO")
-            
-            # Try to open the actual add dialog
-            page.dialog = add_dialog
-            add_dialog.open = True
-            page.update()
-            print("✅ Add dialog je uspešno otvoren!")
-            
-        except Exception as e:
-            print(f"❌ Greška pri otvaranju add dialoga: {e}")
-            import traceback
-            traceback.print_exc()
-            show_snack_bar(page, f"Greška: {str(e)}", "ERROR")
+    # Edit book dialog
+    edit_dialog = ft.AlertDialog(
+        title=ft.Text("Izmeni knjigu"),
+        content=ft.Column([
+            edit_title_field,
+            edit_author_field,
+            edit_isbn_field,
+            edit_category_field,
+            edit_year_field,
+            edit_publisher_field,
+            edit_description_field,
+            edit_copies_field,
+            edit_location_field
+        ], scroll=ft.ScrollMode.AUTO, height=400),
+        actions=[
+            ft.TextButton("Otkaži", on_click=lambda e: close_edit_dialog()),
+            ft.TextButton("Sačuvaj", on_click=lambda e: update_book_action())
+        ],
+        actions_alignment=ft.MainAxisAlignment.END,
+    )
     
-    def close_add_dialog():
-        add_dialog.open = False
-        page.update()
+
     
     def open_edit_dialog(book_data):
         # Prepopulate fields with book data
@@ -85,6 +222,7 @@ def admin_books(page_data: PageData):
         page.update()
     
     def save_book():
+        print("DEBUG: save_book() pozvan!")  # Debug
         try:
             # Validate required fields
             if not title_field.value or not author_field.value or not isbn_field.value:
@@ -443,47 +581,6 @@ def admin_books(page_data: PageData):
     # Container for mobile cards
     books_container = ft.Column([], spacing=16)
     
-    # Define dialogs AFTER all functions are defined
-    add_dialog = ft.AlertDialog(
-        title=ft.Text("Dodaj novu knjigu"),
-        content=ft.Column([
-            title_field,
-            author_field,
-            isbn_field,
-            category_field,
-            year_field,
-            publisher_field,
-            description_field,
-            copies_field,
-            location_field
-        ], scroll=ft.ScrollMode.AUTO, height=400),
-        actions=[
-            ft.TextButton("Otkaži", on_click=lambda e: close_add_dialog()),
-            ft.TextButton("Dodaj", on_click=lambda e: save_book())
-        ],
-        actions_alignment=ft.MainAxisAlignment.END,
-    )
-    
-    edit_dialog = ft.AlertDialog(
-        title=ft.Text("Izmeni knjigu"),
-        content=ft.Column([
-            edit_title_field,
-            edit_author_field,
-            edit_isbn_field,
-            edit_category_field,
-            edit_year_field,
-            edit_publisher_field,
-            edit_description_field,
-            edit_copies_field,
-            edit_location_field
-        ], scroll=ft.ScrollMode.AUTO, height=400),
-        actions=[
-            ft.TextButton("Otkaži", on_click=lambda e: close_edit_dialog()),
-            ft.TextButton("Sačuvaj", on_click=lambda e: update_book_action())
-        ],
-        actions_alignment=ft.MainAxisAlignment.END,
-    )
-    
     # Load books on page load
     load_books()
     
@@ -497,7 +594,7 @@ def admin_books(page_data: PageData):
             ft.ElevatedButton(
                 "Dodaj knjigu",
                 icon=ft.Icons.ADD,
-                on_click=lambda e: open_add_dialog(),
+                on_click=lambda e: test_button_click(),
                 expand=True,
                 height=50
             ),
@@ -513,7 +610,7 @@ def admin_books(page_data: PageData):
                 ft.ElevatedButton(
                     "Dodaj knjigu",
                     icon=ft.Icons.ADD,
-                    on_click=lambda e: open_add_dialog()
+                    on_click=lambda e: test_button_click()
                 )
             ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
             ft.Divider(),

@@ -219,7 +219,7 @@ def admin_members(page_data: PageData) -> None:
                 "active": ft.Colors.GREEN,
                 "suspended": ft.Colors.ORANGE,
                 "expired": ft.Colors.RED
-            }.get(member["membership_status"], ft.Colors.GREY)
+            }.get(member.get("membership_status", "active"), ft.Colors.GREY)
             
             members_list.controls.append(
                 ft.Card(
@@ -227,20 +227,20 @@ def admin_members(page_data: PageData) -> None:
                         content=ft.Column([
                             ft.ListTile(
                                 leading=ft.Icon(ft.Icons.PERSON, color=ft.Colors.BLUE),
-                                title=ft.Text(f"{member['first_name']} {member['last_name']}"),
-                                subtitle=ft.Text(f"Član broj: {member['membership_number']}"),
+                                                            title=ft.Text(f"{member.get('first_name', '')} {member.get('last_name', '')}"),
+                            subtitle=ft.Text(f"Član broj: {member.get('membership_number', '')}"),
                             ),
                             ft.Container(
                                 content=ft.Column([
                                     ft.Row([
-                                        ft.Text(f"E-adresa: {member['email']}", size=12),
-                                        ft.Text(f"Telefon: {member['phone']}", size=12),
+                                        ft.Text(f"E-adresa: {member.get('email', '')}", size=12),
+                                        ft.Text(f"Telefon: {member.get('phone', '')}", size=12),
                                     ]),
                                     ft.Row([
-                                        ft.Text(f"Tip: {member['membership_type']}", size=12),
+                                        ft.Text(f"Tip: {member.get('membership_type', '')}", size=12),
                                         ft.Container(
                                             content=ft.Text(
-                                                member["membership_status"].upper(),
+                                                member.get("membership_status", "active").upper(),
                                                 color=ft.Colors.WHITE,
                                                 size=10,
                                                 weight=ft.FontWeight.BOLD
@@ -251,8 +251,8 @@ def admin_members(page_data: PageData) -> None:
                                         ),
                                     ]),
                                     ft.Row([
-                                        ft.Text(f"Pozajmice: {member['current_loans']}/{member['max_loans']}", size=12),
-                                        ft.Text(f"Članstvo do: {member['membership_end_date']}", size=12),
+                                        ft.Text(f"Pozajmice: {member.get('current_loans', 0)}/{member.get('max_loans', 5)}", size=12),
+                                        ft.Text(f"Članstvo do: {member.get('membership_end_date', 'N/A')}", size=12),
                                     ])
                                 ]),
                                 padding=ft.padding.only(left=16, right=16, bottom=16)
@@ -283,9 +283,9 @@ def admin_members(page_data: PageData) -> None:
         
         filtered_members = [
             member for member in members_data
-            if search_term.lower() in f"{member['first_name']} {member['last_name']}".lower() or
-               search_term.lower() in member['email'].lower() or
-               search_term.lower() in member['membership_number'].lower()
+            if search_term.lower() in f"{member.get('first_name', '')} {member.get('last_name', '')}".lower() or
+               search_term.lower() in member.get('email', '').lower() or
+               search_term.lower() in member.get('membership_number', '').lower()
         ]
         
         members_list.controls.clear()
@@ -295,7 +295,7 @@ def admin_members(page_data: PageData) -> None:
                 "active": ft.Colors.GREEN,
                 "suspended": ft.Colors.ORANGE,
                 "expired": ft.Colors.RED
-            }.get(member["membership_status"], ft.Colors.GREY)
+            }.get(member.get("membership_status", "active"), ft.Colors.GREY)
             
             members_list.controls.append(
                 ft.Card(
@@ -303,20 +303,20 @@ def admin_members(page_data: PageData) -> None:
                         content=ft.Column([
                             ft.ListTile(
                                 leading=ft.Icon(ft.Icons.PERSON, color=ft.Colors.BLUE),
-                                title=ft.Text(f"{member['first_name']} {member['last_name']}"),
-                                subtitle=ft.Text(f"Član broj: {member['membership_number']}"),
+                                                            title=ft.Text(f"{member.get('first_name', '')} {member.get('last_name', '')}"),
+                            subtitle=ft.Text(f"Član broj: {member.get('membership_number', '')}"),
                             ),
                             ft.Container(
                                 content=ft.Column([
                                     ft.Row([
-                                        ft.Text(f"E-adresa: {member['email']}", size=12),
-                                        ft.Text(f"Telefon: {member['phone']}", size=12),
+                                        ft.Text(f"E-adresa: {member.get('email', '')}", size=12),
+                                        ft.Text(f"Telefon: {member.get('phone', '')}", size=12),
                                     ]),
                                     ft.Row([
-                                        ft.Text(f"Tip: {member['membership_type']}", size=12),
+                                        ft.Text(f"Tip: {member.get('membership_type', '')}", size=12),
                                         ft.Container(
                                             content=ft.Text(
-                                                member["membership_status"].upper(),
+                                                member.get("membership_status", "active").upper(),
                                                 color=ft.Colors.WHITE,
                                                 size=10,
                                                 weight=ft.FontWeight.BOLD
@@ -327,8 +327,8 @@ def admin_members(page_data: PageData) -> None:
                                         ),
                                     ]),
                                     ft.Row([
-                                        ft.Text(f"Pozajmice: {member['current_loans']}/{member['max_loans']}", size=12),
-                                        ft.Text(f"Članstvo do: {member['membership_end_date']}", size=12),
+                                        ft.Text(f"Pozajmice: {member.get('current_loans', 0)}/{member.get('max_loans', 5)}", size=12),
+                                        ft.Text(f"Članstvo do: {member.get('membership_end_date', 'N/A')}", size=12),
                                     ])
                                 ]),
                                 padding=ft.padding.only(left=16, right=16, bottom=16)
@@ -346,8 +346,8 @@ def admin_members(page_data: PageData) -> None:
     
     # Statistics cards
     total_members = len(members_data)
-    active_members = len([m for m in members_data if m["membership_status"] == "active"])
-    student_members = len([m for m in members_data if m["membership_type"] == "student"])
+    active_members = len([m for m in members_data if m.get("membership_status", "active") == "active"])
+    student_members = len([m for m in members_data if m.get("membership_type", "regular") == "student"])
     
     stats_row = ft.Row([
         ft.Card(
