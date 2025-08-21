@@ -1,6 +1,6 @@
 import flet as ft
 from flet_navigator import PageData
-from utils.global_state import global_state
+from utils.session_manager import clear_current_user
 
 # Navigation pages for different user types
 admin_pages = ['admin_dashboard', 'admin_books', 'admin_members', 'admin_loans', 'admin_statistics']
@@ -8,8 +8,8 @@ member_pages = ['member_dashboard', 'book_search', 'my_loans', 'my_reservations'
 
 def logout_user(page_data):
     """Logout user and redirect to login"""
-    # Clear user data
-    global_state.set("user", {})
+    # Clear user data from session
+    clear_current_user()
     
     # Navigate to login page
     page_data.navigate('login')

@@ -1,10 +1,11 @@
 import flet as ft, asyncio
 # from components.button import form_button
 from flet_navigator import PageData
-from controllers.login_controller import handle_login
+from controllers.login_controller import login_user
 from components.loader import Loader
 from components.responsive_card import ResponsiveForm
 from components.snack_bar import SnackBar
+from utils.session_manager import set_current_user
 
 def login_screen(page_data: PageData) -> None:  
 	page = page_data.page
@@ -15,15 +16,18 @@ def login_screen(page_data: PageData) -> None:
 			# Determine login type based on radio button selection
 			login_type = user_type_group.value
 			
-			logged_in, user_data = handle_login(email_tf.value, password_tf.value, login_type)
+			success, message, user_data = login_user(email_tf.value, password_tf.value)
 			
-			if logged_in:
+			if success:
 				# login is successful
-				user_type = "Administrator" if login_type == "admin" else "Član"
+				user_type = "Administrator" if user_data.get('is_admin', False) else "Član"
 				page.overlay.append(SnackBar(f'Uspešna prijava kao {user_type}!', duration=2500))
 				
-				# Navigate based on user type
-				if login_type == "admin":
+				# Store user data in session manager
+				set_current_user(user_data)
+				
+				# Navigate based on user type from database
+				if user_data.get('is_admin', False):
 					page_data.navigate('admin_dashboard')
 				else:
 					page_data.navigate('member_dashboard')

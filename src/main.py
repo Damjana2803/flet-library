@@ -24,6 +24,27 @@ from utils.route_guard import guests_guard, auth_guard, admin_guard
 
 db_init()
 
+# 404 Error Page
+def error_404(page_data: PageData):
+    page = page_data.page
+    page.title = "404 - Stranica nije pronađena"
+    
+    return ft.Column([
+        ft.Container(
+            content=ft.Column([
+                ft.Text("404", size=72, weight=ft.FontWeight.BOLD, color=ft.Colors.RED),
+                ft.Text("Stranica nije pronađena", size=24),
+                ft.Text("Tražena stranica ne postoji ili nije dostupna.", size=16),
+                ft.ElevatedButton(
+                    "Povratak na početnu",
+                    on_click=lambda _: page_data.navigate('/')
+                )
+            ], horizontal_alignment=ft.CrossAxisAlignment.CENTER),
+            alignment=ft.alignment.center,
+            expand=True
+        )
+    ], expand=True)
+
 # GUEST ROUTES
 @route('/')
 def main(page_data: PageData) -> None:
@@ -78,6 +99,12 @@ def my_reservations(page_data: PageData) -> None:
 @route
 def member_profile(page_data: PageData) -> None:
 	auth_guard(page_data, 'Biblioteka | Moj profil', lambda pd: member_profile_content(pd))
+
+# 404 Route
+@route
+def error_404_route(page_data: PageData) -> None:
+    page_data.page.title = "404 - Stranica nije pronađena"
+    page_data.page.add(error_404(page_data))
 
 ft.app(
     lambda page: PublicFletNavigator(page).render(page)

@@ -6,18 +6,18 @@ class SnackBarTypes:
 	INFO = 'INFO'
 
 bgcolors = {
-	'SUCCESS': ft.Colors.GREEN_100,
+	'SUCCESS': ft.Colors.GREEN,
 	'ERROR': ft.Colors.RED_100,
 	'INFO': ft.Colors.WHITE60,
 	'error': ft.Colors.RED_100,
-	'success': ft.Colors.GREEN_100,
+	'success': ft.Colors.GREEN,
 	'info': ft.Colors.WHITE60,
 }
 
 class SnackBar(ft.SnackBar):
 	def __init__(self, title: str, subtitle: str | None = None, duration = 4000, snackbar_type: SnackBarTypes | str = SnackBarTypes.SUCCESS, open = True):
 		self.column = ft.Column([
-			ft.Text(title, weight=ft.FontWeight.BOLD),
+			ft.Text(title, weight=ft.FontWeight.BOLD, color=ft.Colors.WHITE if snackbar_type == SnackBarTypes.SUCCESS else None),
 		])
 		super().__init__(self.column)
 		self.snackbar_type = snackbar_type
@@ -28,7 +28,7 @@ class SnackBar(ft.SnackBar):
 		self.content = self.column
 
 		if subtitle is not None:
-			self.column.controls.append(ft.Text(subtitle))
+			self.column.controls.append(ft.Text(subtitle, color=ft.Colors.WHITE if snackbar_type == SnackBarTypes.SUCCESS else None))
 					
 	def append_error(self, error: str):
 		if self.snackbar_type == SnackBarTypes.ERROR:
@@ -44,12 +44,19 @@ def show_snack_bar(page: ft.Page, message: str, snackbar_type: str = SnackBarTyp
 		snackbar_type: Tip snack bara ('SUCCESS', 'ERROR', 'INFO')
 		duration: Trajanje u milisekundama
 	"""
-	snack_bar = SnackBar(
-		title=message,
-		snackbar_type=snackbar_type,
-		duration=duration
-	)
-	page.show_snack_bar(snack_bar)
+	try:
+		snack_bar = SnackBar(
+			title=message,
+			snackbar_type=snackbar_type,
+			duration=duration
+		)
+		# Use the same approach as login view - append to overlay
+		page.overlay.append(snack_bar)
+		page.update()
+	except Exception as e:
+		# Fallback: just print the message if snack bar fails
+		print(f"Snack bar error: {e}")
+		print(f"Message: {message}")
 
 
 

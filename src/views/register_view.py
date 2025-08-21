@@ -1,6 +1,6 @@
 import flet as ft, asyncio
 from flet_navigator import PageData
-from controllers.register_controller import handle_member_register
+from controllers.login_controller import register_user
 from components.loader import Loader
 from components.responsive_card import ResponsiveForm
 from components.snack_bar import SnackBar
@@ -13,10 +13,16 @@ def register_screen(page_data: PageData):
 		loader = Loader(page)
 		asyncio.create_task(loader.create_loader())		
 		
-		register = handle_member_register(
-			full_name=name_tf.value,
+		# Split full name into first and last name
+		name_parts = name_tf.value.strip().split(' ', 1)
+		first_name = name_parts[0] if name_parts else ""
+		last_name = name_parts[1] if len(name_parts) > 1 else ""
+		
+		register = register_user(
 			email=email_tf.value,
 			password=password_tf.value,
+			first_name=first_name,
+			last_name=last_name,
 			phone=phone_tf.value,
 			address=address_tf.value,
 			membership_type=membership_type.value

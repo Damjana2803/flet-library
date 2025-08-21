@@ -3,7 +3,6 @@ from flet_navigator import PageData
 from components.navbar import NavBar
 from components.snack_bar import show_snack_bar
 from controllers.admin_controller import add_book, get_all_books, delete_book, update_book
-from utils.global_state import global_state
 
 def admin_books(page_data: PageData):
     page = page_data.page
@@ -14,6 +13,7 @@ def admin_books(page_data: PageData):
     
     # State variables
     books = []
+    show_modal = False  # Control modal visibility
     search_query = ft.TextField(
         label="Pretraži knjige",
         prefix_icon=ft.Icons.SEARCH,
@@ -21,47 +21,341 @@ def admin_books(page_data: PageData):
     )
     
     # Dialog fields for adding new book
-    title_field = ft.TextField(label="Naslov *", hint_text="Unesite naslov knjige")
-    author_field = ft.TextField(label="Autor *", hint_text="Unesite ime autora")
-    isbn_field = ft.TextField(label="ISBN *", hint_text="Unesite ISBN broj")
-    category_field = ft.TextField(label="Kategorija", hint_text="Unesite kategoriju")
-    year_field = ft.TextField(label="Godina izdanja *", hint_text="Unesite godinu")
-    publisher_field = ft.TextField(label="Izdavač", hint_text="Unesite izdavača")
-    description_field = ft.TextField(label="Opis", multiline=True, min_lines=3, max_lines=5, hint_text="Unesite opis knjige")
-    copies_field = ft.TextField(label="Broj primeraka *", hint_text="Unesite broj primeraka")
-    location_field = ft.TextField(label="Lokacija", hint_text="Unesite lokaciju")
+    title_field = ft.TextField(
+        hint_text="Orlovi rano lete",
+        hint_style=ft.TextStyle(color=ft.Colors.GREY_400),
+        on_change=lambda e: validate_field(title_field, "Naslov je obavezan")
+    )
+    author_field = ft.TextField(
+        hint_text="Branko Ćopić",
+        hint_style=ft.TextStyle(color=ft.Colors.GREY_400),
+        on_change=lambda e: validate_field(author_field, "Autor je obavezan")
+    )
+    isbn_field = ft.TextField(
+        hint_text="978-86-123-4567-8",
+        hint_style=ft.TextStyle(color=ft.Colors.GREY_400),
+        on_change=lambda e: validate_field(isbn_field, "ISBN je obavezan")
+    )
+    category_field = ft.TextField(
+        hint_text="Literatura",
+        hint_style=ft.TextStyle(color=ft.Colors.GREY_400)
+    )
+    year_field = ft.TextField(
+        hint_text="2020",
+        hint_style=ft.TextStyle(color=ft.Colors.GREY_400),
+        on_change=lambda e: validate_field(year_field, "Godina je obavezna")
+    )
+    publisher_field = ft.TextField(
+        hint_text="Vulkan izdavaštvo",
+        hint_style=ft.TextStyle(color=ft.Colors.GREY_400)
+    )
+    description_field = ft.TextField(
+        multiline=True, 
+        min_lines=3, 
+        max_lines=5, 
+        hint_text="Kratak opis knjige, radnja, žanr...",
+        hint_style=ft.TextStyle(color=ft.Colors.GREY_400)
+    )
+    copies_field = ft.TextField(
+        hint_text="5",
+        hint_style=ft.TextStyle(color=ft.Colors.GREY_400),
+        on_change=lambda e: validate_field(copies_field, "Broj primeraka je obavezan")
+    )
+    location_field = ft.TextField(
+        hint_text="Polica A-28",
+        hint_style=ft.TextStyle(color=ft.Colors.GREY_400)
+    )
     
     # Edit book dialog fields
-    edit_title_field = ft.TextField(label="Naslov *", hint_text="Unesite naslov knjige")
-    edit_author_field = ft.TextField(label="Autor *", hint_text="Unesite ime autora")
-    edit_isbn_field = ft.TextField(label="ISBN *", hint_text="Unesite ISBN broj")
-    edit_category_field = ft.TextField(label="Kategorija", hint_text="Unesite kategoriju")
-    edit_year_field = ft.TextField(label="Godina izdanja *", hint_text="Unesite godinu")
-    edit_publisher_field = ft.TextField(label="Izdavač", hint_text="Unesite izdavača")
-    edit_description_field = ft.TextField(label="Opis", multiline=True, min_lines=3, max_lines=5, hint_text="Unesite opis knjige")
-    edit_copies_field = ft.TextField(label="Broj primeraka *", hint_text="Unesite broj primeraka")
-    edit_location_field = ft.TextField(label="Lokacija", hint_text="Unesite lokaciju")
+    edit_title_field = ft.TextField(
+        hint_text="Orlovi rano lete",
+        hint_style=ft.TextStyle(color=ft.Colors.GREY_400),
+        on_change=lambda e: validate_field(edit_title_field, "Naslov je obavezan")
+    )
+    edit_author_field = ft.TextField(
+        hint_text="Branko Ćopić",
+        hint_style=ft.TextStyle(color=ft.Colors.GREY_400),
+        on_change=lambda e: validate_field(edit_author_field, "Autor je obavezan")
+    )
+    edit_isbn_field = ft.TextField(
+        hint_text="978-86-123-4567-8",
+        hint_style=ft.TextStyle(color=ft.Colors.GREY_400),
+        on_change=lambda e: validate_field(edit_isbn_field, "ISBN je obavezan")
+    )
+    edit_category_field = ft.TextField(
+        hint_text="Literatura",
+        hint_style=ft.TextStyle(color=ft.Colors.GREY_400)
+    )
+    edit_year_field = ft.TextField(
+        hint_text="2020",
+        hint_style=ft.TextStyle(color=ft.Colors.GREY_400),
+        on_change=lambda e: validate_field(edit_year_field, "Godina je obavezna")
+    )
+    edit_publisher_field = ft.TextField(
+        hint_text="Vulkan izdavaštvo",
+        hint_style=ft.TextStyle(color=ft.Colors.GREY_400)
+    )
+    edit_description_field = ft.TextField(
+        multiline=True, 
+        min_lines=3, 
+        max_lines=5, 
+        hint_text="Kratak opis knjige, radnja, žanr...",
+        hint_style=ft.TextStyle(color=ft.Colors.GREY_400)
+    )
+    edit_copies_field = ft.TextField(
+        hint_text="5",
+        hint_style=ft.TextStyle(color=ft.Colors.GREY_400),
+        on_change=lambda e: validate_field(edit_copies_field, "Broj primeraka je obavezan")
+    )
+    edit_location_field = ft.TextField(
+        hint_text="Polica A-28",
+        hint_style=ft.TextStyle(color=ft.Colors.GREY_400)
+    )
+    
+    # Custom modal overlays
+    # Add book modal
+    add_modal_overlay = ft.Container(
+        content=ft.Container(
+            content=ft.Column([
+                ft.Container(
+                    content=ft.Row([
+                        ft.Text("Dodaj novu knjigu", size=20, weight=ft.FontWeight.BOLD, expand=True),
+                        ft.IconButton(
+                            icon=ft.Icons.CLOSE,
+                            on_click=lambda e: close_add_dialog(),
+                            tooltip="Zatvori"
+                        )
+                    ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
+                    border=ft.border.only(bottom=ft.border.BorderSide(1, ft.Colors.GREY_300)),
+                    padding=ft.padding.only(bottom=20),
+                ),
+                ft.Container(
+                    content=ft.Column([
+                        ft.Text("Naslov *", size=14, weight=ft.FontWeight.BOLD, color=ft.Colors.GREY_700),
+                        title_field,
+                        ft.Text("Autor *", size=14, weight=ft.FontWeight.BOLD, color=ft.Colors.GREY_700),
+                        author_field,
+                        ft.Text("ISBN *", size=14, weight=ft.FontWeight.BOLD, color=ft.Colors.GREY_700),
+                        isbn_field,
+                        ft.Text("Kategorija", size=14, weight=ft.FontWeight.BOLD, color=ft.Colors.GREY_700),
+                        category_field,
+                        ft.Text("Godina izdanja *", size=14, weight=ft.FontWeight.BOLD, color=ft.Colors.GREY_700),
+                        year_field,
+                        ft.Text("Izdavač", size=14, weight=ft.FontWeight.BOLD, color=ft.Colors.GREY_700),
+                        publisher_field,
+                        ft.Text("Opis", size=14, weight=ft.FontWeight.BOLD, color=ft.Colors.GREY_700),
+                        description_field,
+                        ft.Text("Broj primeraka *", size=14, weight=ft.FontWeight.BOLD, color=ft.Colors.GREY_700),
+                        copies_field,
+                        ft.Text("Lokacija", size=14, weight=ft.FontWeight.BOLD, color=ft.Colors.GREY_700),
+                        location_field
+                    ], spacing=5, scroll=ft.ScrollMode.AUTO),
+                    padding=ft.padding.only(top=10),
+                    expand=True,
+                ),
+                ft.Container(
+                    content=ft.Row([
+                        ft.ElevatedButton("Otkaži", on_click=lambda e: close_add_dialog()),
+                        ft.ElevatedButton("Dodaj", on_click=lambda e: save_book(), style=ft.ButtonStyle(bgcolor=ft.Colors.BLUE, color=ft.Colors.WHITE)),
+                    ], alignment=ft.MainAxisAlignment.END, spacing=10),
+                    border=ft.border.only(top=ft.border.BorderSide(1, ft.Colors.GREY_300)),
+                    padding=ft.padding.only(top=20),
+                ),
+            ], spacing=20),
+            padding=30,
+            bgcolor=ft.Colors.WHITE,
+            border_radius=10,
+            width=500 if not is_mobile else 350,
+            margin=ft.margin.only(top=20, bottom=20),
+        ),
+        alignment=ft.alignment.center,
+        bgcolor=ft.Colors.with_opacity(0.5, ft.Colors.BLACK),
+        visible=False,
+    )
+    
+    # Edit book modal
+    edit_modal_overlay = ft.Container(
+        content=ft.Container(
+            content=ft.Column([
+                ft.Container(
+                    content=ft.Row([
+                        ft.Text("Izmeni knjigu", size=20, weight=ft.FontWeight.BOLD, expand=True),
+                        ft.IconButton(
+                            icon=ft.Icons.CLOSE,
+                            on_click=lambda e: close_edit_dialog(),
+                            tooltip="Zatvori"
+                        )
+                    ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
+                    border=ft.border.only(bottom=ft.border.BorderSide(1, ft.Colors.GREY_300)),
+                    padding=ft.padding.only(bottom=20),
+                ),
+                ft.Container(
+                    content=ft.Column([
+                        ft.Text("Naslov *", size=14, weight=ft.FontWeight.BOLD, color=ft.Colors.GREY_700),
+                        edit_title_field,
+                        ft.Text("Autor *", size=14, weight=ft.FontWeight.BOLD, color=ft.Colors.GREY_700),
+                        edit_author_field,
+                        ft.Text("ISBN *", size=14, weight=ft.FontWeight.BOLD, color=ft.Colors.GREY_700),
+                        edit_isbn_field,
+                        ft.Text("Kategorija", size=14, weight=ft.FontWeight.BOLD, color=ft.Colors.GREY_700),
+                        edit_category_field,
+                        ft.Text("Godina izdanja *", size=14, weight=ft.FontWeight.BOLD, color=ft.Colors.GREY_700),
+                        edit_year_field,
+                        ft.Text("Izdavač", size=14, weight=ft.FontWeight.BOLD, color=ft.Colors.GREY_700),
+                        edit_publisher_field,
+                        ft.Text("Opis", size=14, weight=ft.FontWeight.BOLD, color=ft.Colors.GREY_700),
+                        edit_description_field,
+                        ft.Text("Broj primeraka *", size=14, weight=ft.FontWeight.BOLD, color=ft.Colors.GREY_700),
+                        edit_copies_field,
+                        ft.Text("Lokacija", size=14, weight=ft.FontWeight.BOLD, color=ft.Colors.GREY_700),
+                        edit_location_field
+                    ], spacing=5, scroll=ft.ScrollMode.AUTO),
+                    padding=ft.padding.only(top=10),
+                    expand=True,
+                ),
+                ft.Container(
+                    content=ft.Row([
+                        ft.ElevatedButton("Otkaži", on_click=lambda e: close_edit_dialog()),
+                        ft.ElevatedButton("Sačuvaj", on_click=lambda e: update_book_action(), style=ft.ButtonStyle(bgcolor=ft.Colors.BLUE, color=ft.Colors.WHITE)),
+                    ], alignment=ft.MainAxisAlignment.END, spacing=10),
+                    border=ft.border.only(top=ft.border.BorderSide(1, ft.Colors.GREY_300)),
+                    padding=ft.padding.only(top=20),
+                ),
+            ], spacing=20),
+            padding=30,
+            bgcolor=ft.Colors.WHITE,
+            border_radius=10,
+            width=500 if not is_mobile else 350,
+            margin=ft.margin.only(top=20, bottom=20),
+        ),
+        alignment=ft.alignment.center,
+        bgcolor=ft.Colors.with_opacity(0.5, ft.Colors.BLACK),
+        visible=False,
+    )
+    
+    # Delete confirmation modal
+    delete_modal_overlay = ft.Container(
+        content=ft.Container(
+            content=ft.Column([
+                ft.Row([
+                    ft.Text("Potvrda brisanja", size=20, weight=ft.FontWeight.BOLD, expand=True),
+                    ft.IconButton(
+                        icon=ft.Icons.CLOSE,
+                        on_click=lambda e: close_delete_dialog(),
+                        tooltip="Zatvori"
+                    )
+                ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
+                ft.Text("Da li ste sigurni da želite da obrišete ovu knjigu?", size=16),
+                ft.Row([
+                    ft.ElevatedButton("Otkaži", on_click=lambda e: close_delete_dialog()),
+                    ft.ElevatedButton("Obriši", on_click=lambda e: confirm_delete_book(), style=ft.ButtonStyle(bgcolor=ft.Colors.RED, color=ft.Colors.WHITE)),
+                ], alignment=ft.MainAxisAlignment.END, spacing=10),
+            ], spacing=10),
+            padding=20,
+            bgcolor=ft.Colors.WHITE,
+            border_radius=10,
+            width=400 if not is_mobile else 300,
+            height=200,
+        ),
+        alignment=ft.alignment.center,
+        bgcolor=ft.Colors.with_opacity(0.5, ft.Colors.BLACK),
+        visible=False,
+    )
+    
+    # Variable to store book being deleted
+    current_deleting_book_id = None
+    
+    def validate_field(field, error_message):
+        """Validate a field and show/hide error styling"""
+        if not field.value or field.value.strip() == "":
+            field.border_color = ft.Colors.RED
+            field.error_text = error_message
+        else:
+            field.border_color = None
+            field.error_text = None
+        page.update()
+    
+    def validate_all_fields():
+        """Validate all required fields and return True if all valid"""
+        is_valid = True
+        
+        # Validate add fields
+        if not title_field.value or title_field.value.strip() == "":
+            title_field.border_color = ft.Colors.RED
+            title_field.error_text = "Naslov je obavezan"
+            is_valid = False
+        
+        if not author_field.value or author_field.value.strip() == "":
+            author_field.border_color = ft.Colors.RED
+            author_field.error_text = "Autor je obavezan"
+            is_valid = False
+        
+        if not isbn_field.value or isbn_field.value.strip() == "":
+            isbn_field.border_color = ft.Colors.RED
+            isbn_field.error_text = "ISBN je obavezan"
+            is_valid = False
+        
+        if not year_field.value or year_field.value.strip() == "":
+            year_field.border_color = ft.Colors.RED
+            year_field.error_text = "Godina je obavezna"
+            is_valid = False
+        
+        if not copies_field.value or copies_field.value.strip() == "":
+            copies_field.border_color = ft.Colors.RED
+            copies_field.error_text = "Broj primeraka je obavezan"
+            is_valid = False
+        
+        page.update()
+        return is_valid
+    
+    def validate_all_edit_fields():
+        """Validate all required edit fields and return True if all valid"""
+        is_valid = True
+        
+        # Validate edit fields
+        if not edit_title_field.value or edit_title_field.value.strip() == "":
+            edit_title_field.border_color = ft.Colors.RED
+            edit_title_field.error_text = "Naslov je obavezan"
+            is_valid = False
+        
+        if not edit_author_field.value or edit_author_field.value.strip() == "":
+            edit_author_field.border_color = ft.Colors.RED
+            edit_author_field.error_text = "Autor je obavezan"
+            is_valid = False
+        
+        if not edit_isbn_field.value or edit_isbn_field.value.strip() == "":
+            edit_isbn_field.border_color = ft.Colors.RED
+            edit_isbn_field.error_text = "ISBN je obavezan"
+            is_valid = False
+        
+        if not edit_year_field.value or edit_year_field.value.strip() == "":
+            edit_year_field.border_color = ft.Colors.RED
+            edit_year_field.error_text = "Godina je obavezna"
+            is_valid = False
+        
+        if not edit_copies_field.value or edit_copies_field.value.strip() == "":
+            edit_copies_field.border_color = ft.Colors.RED
+            edit_copies_field.error_text = "Broj primeraka je obavezan"
+            is_valid = False
+        
+        page.update()
+        return is_valid
     
     def open_add_dialog():
-        print("🖱️ DUGME KLIKNUTO! open_add_dialog() pozvan!")
         try:
-            # Show a snack bar to confirm the function is called
-            show_snack_bar(page, "🖱️ Dugme je kliknuto! Otvaram dialog...", "INFO")
-            
-            # Try to open the actual add dialog
-            page.dialog = add_dialog
-            add_dialog.open = True
+            # Show the custom modal
+            nonlocal show_modal
+            show_modal = True
+            add_modal_overlay.visible = True
             page.update()
-            print("✅ Add dialog je uspešno otvoren!")
             
         except Exception as e:
-            print(f"❌ Greška pri otvaranju add dialoga: {e}")
-            import traceback
-            traceback.print_exc()
             show_snack_bar(page, f"Greška: {str(e)}", "ERROR")
     
     def close_add_dialog():
-        add_dialog.open = False
+        nonlocal show_modal
+        show_modal = False
+        add_modal_overlay.visible = False
         page.update()
     
     def open_edit_dialog(book_data):
@@ -76,18 +370,18 @@ def admin_books(page_data: PageData):
         edit_copies_field.value = str(book_data.get('total_copies', ''))
         edit_location_field.value = book_data.get('location', '')
         
-        page.dialog = edit_dialog
-        edit_dialog.open = True
+        # Show the edit modal
+        edit_modal_overlay.visible = True
         page.update()
     
     def close_edit_dialog():
-        edit_dialog.open = False
+        edit_modal_overlay.visible = False
         page.update()
     
     def save_book():
         try:
-            # Validate required fields
-            if not title_field.value or not author_field.value or not isbn_field.value:
+            # Validate all required fields first
+            if not validate_all_fields():
                 show_snack_bar(page, "Molimo popunite sva obavezna polja", "ERROR")
                 return
             
@@ -136,8 +430,8 @@ def admin_books(page_data: PageData):
     
     def update_book_action():
         try:
-            # Validate required fields
-            if not edit_title_field.value or not edit_author_field.value or not edit_isbn_field.value:
+            # Validate all required fields first
+            if not validate_all_edit_fields():
                 show_snack_bar(page, "Molimo popunite sva obavezna polja", "ERROR")
                 return
             
@@ -192,6 +486,19 @@ def admin_books(page_data: PageData):
         description_field.value = ""
         copies_field.value = ""
         location_field.value = ""
+        
+        # Clear validation errors
+        title_field.border_color = None
+        title_field.error_text = None
+        author_field.border_color = None
+        author_field.error_text = None
+        isbn_field.border_color = None
+        isbn_field.error_text = None
+        year_field.border_color = None
+        year_field.error_text = None
+        copies_field.border_color = None
+        copies_field.error_text = None
+        
         page.update()
     
     def clear_edit_dialog_fields():
@@ -204,6 +511,19 @@ def admin_books(page_data: PageData):
         edit_description_field.value = ""
         edit_copies_field.value = ""
         edit_location_field.value = ""
+        
+        # Clear validation errors
+        edit_title_field.border_color = None
+        edit_title_field.error_text = None
+        edit_author_field.border_color = None
+        edit_author_field.error_text = None
+        edit_isbn_field.border_color = None
+        edit_isbn_field.error_text = None
+        edit_year_field.border_color = None
+        edit_year_field.error_text = None
+        edit_copies_field.border_color = None
+        edit_copies_field.error_text = None
+        
         page.update()
     
     def load_books():
@@ -212,11 +532,10 @@ def admin_books(page_data: PageData):
             books.clear()
             books.extend(all_books)
             
-            # If no books exist, add some sample data
+            # If no books exist in database, add some sample books using the database function
             if not books:
                 sample_books = [
                     {
-                        'id': 1,
                         'title': 'Prvi korak u programiranju',
                         'author': 'Marko Petrović',
                         'isbn': '978-86-123-4567-8',
@@ -225,12 +544,9 @@ def admin_books(page_data: PageData):
                         'publisher': 'Tehnička knjiga',
                         'description': 'Uvod u programiranje za početnike',
                         'total_copies': 5,
-                        'available_copies': 5,
-                        'location': 'Glavna biblioteka',
-                        'status': 'available'
+                        'location': 'Glavna biblioteka'
                     },
                     {
-                        'id': 2,
                         'title': 'Baze podataka',
                         'author': 'Ana Jovanović',
                         'isbn': '978-86-234-5678-9',
@@ -239,49 +555,25 @@ def admin_books(page_data: PageData):
                         'publisher': 'Fakultet organizacionih nauka',
                         'description': 'Teorija i praksa baza podataka',
                         'total_copies': 3,
-                        'available_copies': 2,
-                        'location': 'Glavna biblioteka',
-                        'status': 'available'
+                        'location': 'Glavna biblioteka'
                     }
                 ]
-                books.extend(sample_books)
+                
+                # Add sample books to database
+                for book_data in sample_books:
+                    success, message = add_book(**book_data)
+                    if not success:
+                        print(f"Greška pri dodavanju sample knjige: {message}")
+                
+                # Reload books from database after adding sample data
+                all_books = get_all_books()
+                books.clear()
+                books.extend(all_books)
             
             update_books_table()
         except Exception as e:
             print(f"Greška pri učitavanju knjiga: {str(e)}")
-            # Add sample data if there's an error
-            sample_books = [
-                {
-                    'id': 1,
-                    'title': 'Prvi korak u programiranju',
-                    'author': 'Marko Petrović',
-                    'isbn': '978-86-123-4567-8',
-                    'category': 'Programiranje',
-                    'publication_year': 2023,
-                    'publisher': 'Tehnička knjiga',
-                    'description': 'Uvod u programiranje za početnike',
-                    'total_copies': 5,
-                    'available_copies': 5,
-                    'location': 'Glavna biblioteka',
-                    'status': 'available'
-                },
-                {
-                    'id': 2,
-                    'title': 'Baze podataka',
-                    'author': 'Ana Jovanović',
-                    'isbn': '978-86-234-5678-9',
-                    'category': 'Baze podataka',
-                    'publication_year': 2022,
-                    'publisher': 'Fakultet organizacionih nauka',
-                    'description': 'Teorija i praksa baza podataka',
-                    'total_copies': 3,
-                    'available_copies': 2,
-                    'location': 'Glavna biblioteka',
-                    'status': 'available'
-                }
-            ]
-            books.extend(sample_books)
-            update_books_table()
+            show_snack_bar(page, f"Greška pri učitavanju knjiga: {str(e)}", "ERROR")
     
     def filter_books():
         query = search_query.value.lower()
@@ -394,95 +686,48 @@ def admin_books(page_data: PageData):
             show_snack_bar(page, "Knjiga nije pronađena", "ERROR")
     
     def delete_book_confirm(book_id):
-        def confirm_delete(e):
-            try:
-                success, message = delete_book(book_id)
-                if success:
-                    show_snack_bar(page, "Knjiga uspešno obrisana!", "SUCCESS")
-                    load_books()
-                else:
-                    show_snack_bar(page, f"Greška pri brisanju knjige: {message}", "ERROR")
-            except Exception as e:
-                show_snack_bar(page, f"Greška: {str(e)}", "ERROR")
-            finally:
-                delete_dialog.open = False
-                page.update()
+        nonlocal current_deleting_book_id
+        current_deleting_book_id = book_id
         
-        def cancel_delete(e):
-            delete_dialog.open = False
-            page.update()
-        
-        delete_dialog = ft.AlertDialog(
-            title=ft.Text("Potvrda brisanja"),
-            content=ft.Text("Da li ste sigurni da želite da obrišete ovu knjigu?"),
-            actions=[
-                ft.TextButton("Otkaži", on_click=cancel_delete),
-                ft.TextButton("Obriši", on_click=confirm_delete, style=ft.ButtonStyle(color=ft.Colors.RED))
-            ],
-            actions_alignment=ft.MainAxisAlignment.END,
-        )
-        
-        page.dialog = delete_dialog
-        delete_dialog.open = True
+        # Show the delete confirmation modal
+        delete_modal_overlay.visible = True
         page.update()
+    
+    def close_delete_dialog():
+        delete_modal_overlay.visible = False
+        page.update()
+    
+    def confirm_delete_book():
+        try:
+            success, message = delete_book(current_deleting_book_id)
+            if success:
+                show_snack_bar(page, "Knjiga uspešno obrisana!", "SUCCESS")
+                load_books()
+            else:
+                show_snack_bar(page, f"Greška pri brisanju knjige: {message}", "ERROR")
+        except Exception as e:
+            show_snack_bar(page, f"Greška: {str(e)}", "ERROR")
+        finally:
+            close_delete_dialog()
     
     # Create books table (desktop) and cards container (mobile)
     books_table = ft.DataTable(
         columns=[
-            ft.DataColumn(ft.Text("Naslov")),
-            ft.DataColumn(ft.Text("Autor")),
-            ft.DataColumn(ft.Text("ISBN")),
-            ft.DataColumn(ft.Text("Kategorija")),
-            ft.DataColumn(ft.Text("Primerci")),
-            ft.DataColumn(ft.Text("Lokacija")),
-            ft.DataColumn(ft.Text("Akcije")),
+            ft.DataColumn(ft.Text("Naslov"), numeric=False),
+            ft.DataColumn(ft.Text("Autor"), numeric=False),
+            ft.DataColumn(ft.Text("ISBN"), numeric=False),
+            ft.DataColumn(ft.Text("Kategorija"), numeric=False),
+            ft.DataColumn(ft.Text("Primerci"), numeric=False),
+            ft.DataColumn(ft.Text("Lokacija"), numeric=False),
+            ft.DataColumn(ft.Text("Akcije"), numeric=False),
         ],
-        rows=[]
+        rows=[],
+        expand=True,  # Make table take full width
+        width=float('inf')  # Force full width
     )
     
     # Container for mobile cards
     books_container = ft.Column([], spacing=16)
-    
-    # Define dialogs AFTER all functions are defined
-    add_dialog = ft.AlertDialog(
-        title=ft.Text("Dodaj novu knjigu"),
-        content=ft.Column([
-            title_field,
-            author_field,
-            isbn_field,
-            category_field,
-            year_field,
-            publisher_field,
-            description_field,
-            copies_field,
-            location_field
-        ], scroll=ft.ScrollMode.AUTO, height=400),
-        actions=[
-            ft.TextButton("Otkaži", on_click=lambda e: close_add_dialog()),
-            ft.TextButton("Dodaj", on_click=lambda e: save_book())
-        ],
-        actions_alignment=ft.MainAxisAlignment.END,
-    )
-    
-    edit_dialog = ft.AlertDialog(
-        title=ft.Text("Izmeni knjigu"),
-        content=ft.Column([
-            edit_title_field,
-            edit_author_field,
-            edit_isbn_field,
-            edit_category_field,
-            edit_year_field,
-            edit_publisher_field,
-            edit_description_field,
-            edit_copies_field,
-            edit_location_field
-        ], scroll=ft.ScrollMode.AUTO, height=400),
-        actions=[
-            ft.TextButton("Otkaži", on_click=lambda e: close_edit_dialog()),
-            ft.TextButton("Sačuvaj", on_click=lambda e: update_book_action())
-        ],
-        actions_alignment=ft.MainAxisAlignment.END,
-    )
     
     # Load books on page load
     load_books()
@@ -505,7 +750,7 @@ def admin_books(page_data: PageData):
             search_query,
             ft.Divider(),
             books_container  # Mobile: cards
-        ])
+        ], scroll=ft.ScrollMode.AUTO, expand=True)
     else:
         content_layout = ft.Column([
             ft.Row([
@@ -519,26 +764,23 @@ def admin_books(page_data: PageData):
             ft.Divider(),
             search_query,
             ft.Divider(),
-            books_table  # Desktop: DataTable
-        ])
+            ft.Container(
+                content=books_table,
+                expand=True,
+                width=float('inf')
+            )  # Desktop: DataTable
+        ], scroll=ft.ScrollMode.AUTO, expand=True)
     
-    return ft.Column([
-        navbar_content,
-        ft.Container(
-            content=ft.ListView(
-                controls=[
-                    ft.Card(
-                        content=ft.Container(
-                            content=content_layout,
-                            padding=20 if not is_mobile else 10
-                        )
-                    ),
-                    ft.Container(height=50)  # Bottom spacing
-                ],
-                spacing=10,
-                padding=ft.padding.all(20 if not is_mobile else 10),
-            ),
-            expand=True,
-            height=600,
-        )
+    return ft.Stack([
+        ft.Column([
+            navbar_content,
+            ft.Container(
+                content=content_layout,
+                padding=20 if not is_mobile else 10,
+                expand=True
+            )
+        ], expand=True),
+        add_modal_overlay,  # Add the modal overlay on top
+        edit_modal_overlay,
+        delete_modal_overlay
     ], expand=True)

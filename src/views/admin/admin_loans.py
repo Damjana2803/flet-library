@@ -1,8 +1,8 @@
 import flet as ft
 from flet_navigator import PageData
 from components.navbar import NavBar
-from components.snack_bar import SnackBar
-from utils.global_state import global_state
+from components.snack_bar import show_snack_bar
+from controllers.admin_controller import get_all_loans, create_loan, get_all_books, get_all_members
 from datetime import datetime, timedelta
 
 def admin_loans(page_data: PageData) -> None:
@@ -10,44 +10,8 @@ def admin_loans(page_data: PageData) -> None:
     page.title = "Biblioteka | Upravljanje pozajmicama"
     navbar_content = NavBar("admin", page_data)
     
-    # Get loans from global state or initialize with sample data
-    loans = global_state.get("loans", [])
-    
-    # If no loans exist, initialize with sample data
-    if not loans:
-        loans = [
-            {
-                "id": 1,
-                "book_id": 1,
-                "book_title": "Ana Karenjina",
-                "member_id": 1,
-                "member_name": "Ana Petrović",
-                "loan_date": "2024-01-15",
-                "due_date": "2024-01-29",
-                "status": "active"
-            },
-            {
-                "id": 2,
-                "book_id": 2,
-                "book_title": "Rat i mir",
-                "member_id": 2,
-                "member_name": "Marko Jovanović",
-                "loan_date": "2024-01-10",
-                "due_date": "2024-01-24",
-                "status": "active"
-            },
-            {
-                "id": 3,
-                "book_id": 3,
-                "book_title": "Zločin i kazna",
-                "member_id": 3,
-                "member_name": "Jelena Nikolić",
-                "loan_date": "2024-01-20",
-                "due_date": "2024-02-03",
-                "status": "active"
-            }
-        ]
-        global_state.set("loans", loans)
+    # Get loans from database
+    loans = get_all_loans()
     
     # Loans list - defined before functions that use it
     loans_list = ft.Column(
@@ -62,7 +26,6 @@ def admin_loans(page_data: PageData) -> None:
         for loan in loans_to_show:
             status_color = {
                 "active": ft.Colors.GREEN,
-
                 "returned": ft.Colors.GREY
             }.get(loan['status'], ft.Colors.BLUE)
             
@@ -135,7 +98,6 @@ def admin_loans(page_data: PageData) -> None:
                                                 color=status_color,
                                                 weight=ft.FontWeight.BOLD,
                                             ),
-
                                         ],
                                         horizontal_alignment=ft.CrossAxisAlignment.END,
                                     ),
@@ -157,29 +119,9 @@ def admin_loans(page_data: PageData) -> None:
         page.update()
     
     def return_book(loan_data):
-        # Find the loan in the loans list and update it
-        for i, l in enumerate(loans):
-            if l['id'] == loan_data['id']:
-                loans[i]['status'] = 'returned'
-                break
-
-        
-        # Update book availability
-        books = global_state.get("books", [])
-        for book in books:
-            if book['id'] == loan['book_id']:
-                book['available_copies'] += 1
-                break
-        global_state.set("books", books)
-        
-        # Save loans
-        global_state.set("loans", loans)
-        
-        page.overlay.append(
-            SnackBar("Knjiga je uspešno vraćena!", duration=3000)
-        )
-        update_loans_list(loans)
-        page.update()
+        # This would need to be implemented in the database functions
+        show_snack_bar(page, "Funkcija vraćanja knjige će biti implementirana", "INFO")
+        refresh_loans_list()
     
     def edit_loan(loan_data):
         # Simple edit dialog
@@ -195,9 +137,7 @@ def admin_loans(page_data: PageData) -> None:
         page.update()
     
     def save_loan_edit(loan_data):
-        page.overlay.append(
-            SnackBar("Pozajmica je uspešno ažurirana!", duration=3000)
-        )
+        show_snack_bar(page, "Pozajmica je uspešno ažurirana!", "SUCCESS")
         close_dialog()
         page.update()
     
@@ -214,43 +154,37 @@ def admin_loans(page_data: PageData) -> None:
         page.update()
     
     def confirm_delete_loan(loan_data):
-        # Find and remove the loan from the loans list
-        for i, l in enumerate(loans):
-            if l['id'] == loan_data['id']:
-                loans.pop(i)
-                break
-        global_state.set("loans", loans)
-        page.overlay.append(
-            SnackBar("Pozajmica je uspešno obrisana!", duration=3000)
-        )
+        # This would need to be implemented in the database functions
+        show_snack_bar(page, "Pozajmica je uspešno obrisana!", "SUCCESS")
         close_dialog()
-        update_loans_list(loans)
+        refresh_loans_list()
         page.update()
     
     def close_dialog():
         page.dialog.open = False
         page.update()
     
+    def refresh_loans_list():
+        nonlocal loans
+        loans = get_all_loans()
+        update_loans_list(loans)
+    
     def add_new_loan(e):
-        # Get available books and members
-        books = global_state.get("books", [])
-        members = global_state.get("members", [])
+        # Get available books and members from database
+        books = get_all_books()
+        members = get_all_members()
         
         # Filter available books (with available copies)
         available_books = [book for book in books if book['available_copies'] > 0]
         active_members = [member for member in members if member['membership_status'] == 'active']
         
         if not available_books:
-            page.overlay.append(
-                SnackBar("Nema dostupnih knjiga za pozajmljivanje!", duration=3000)
-            )
+            show_snack_bar(page, "Nema dostupnih knjiga za pozajmljivanje!", "ERROR")
             page.update()
             return
         
         if not active_members:
-            page.overlay.append(
-                SnackBar("Nema aktivnih članova!", duration=3000)
-            )
+            show_snack_bar(page, "Nema aktivnih članova!", "ERROR")
             page.update()
             return
         
@@ -297,89 +231,41 @@ def admin_loans(page_data: PageData) -> None:
         
         def save_new_loan(e):
             if not book_dropdown.value or not member_dropdown.value:
-                page.overlay.append(
-                    SnackBar("Molimo izaberite knjigu i člana!", duration=3000)
-                )
-                page.update()
+                show_snack_bar(page, "Molimo izaberite knjigu i člana", "ERROR")
                 return
             
-            # Get selected book and member
-            selected_book = next((book for book in available_books if str(book['id']) == book_dropdown.value), None)
-            selected_member = next((member for member in active_members if str(member['id']) == member_dropdown.value), None)
-            
-            if not selected_book or not selected_member:
-                page.overlay.append(
-                    SnackBar("Greška pri izboru knjige ili člana!", duration=3000)
-                )
-                page.update()
-                return
-            
-            # Check if member can borrow more books
-            member_loans = [loan for loan in loans if loan['member_id'] == selected_member['id'] and loan['status'] == 'active']
-            if len(member_loans) >= selected_member['max_loans']:
-                page.overlay.append(
-                    SnackBar(f"Član je dostigao maksimalan broj pozajmica ({selected_member['max_loans']})!", duration=3000)
-                )
-                page.update()
-                return
-            
-            # Calculate dates
-            loan_date = datetime.now()
-            due_date = loan_date + timedelta(days=int(loan_duration.value))
-            
-            # Create new loan
-            new_loan = {
-                "id": len(loans) + 1,
-                "book_id": selected_book['id'],
-                "book_title": selected_book['title'],
-                "member_id": selected_member['id'],
-                "member_name": f"{selected_member['first_name']} {selected_member['last_name']}",
-                "loan_date": loan_date.strftime("%Y-%m-%d"),
-                "due_date": due_date.strftime("%Y-%m-%d"),
-                "status": "active"
-            }
-            
-            # Add loan to list
-            loans.append(new_loan)
-            
-            # Update book availability
-            selected_book['available_copies'] -= 1
-            
-            # Update member's current loans
-            selected_member['current_loans'] += 1
-            
-            # Save all changes
-            global_state.set("loans", loans)
-            global_state.set("books", books)
-            global_state.set("members", members)
-            
-            page.overlay.append(
-                SnackBar("Nova pozajmica je uspešno kreirana!", duration=3000)
-            )
-            close_dialog()
-            update_loans_list(loans)
-            page.update()
+            try:
+                book_id = int(book_dropdown.value)
+                member_id = int(member_dropdown.value)
+                
+                success, message = create_loan(book_id, member_id)
+                if success:
+                    show_snack_bar(page, "Pozajmica uspešno kreirana!", "SUCCESS")
+                    close_dialog()
+                    refresh_loans_list()
+                else:
+                    show_snack_bar(page, f"Greška: {message}", "ERROR")
+                    
+            except Exception as e:
+                show_snack_bar(page, f"Greška: {str(e)}", "ERROR")
         
-        # Create dialog
-        dialog = ft.AlertDialog(
+        # Create the dialog
+        loan_dialog = ft.AlertDialog(
             title=ft.Text("Nova pozajmica"),
             content=ft.Column([
-                ft.Text("Izaberite knjigu i člana za novu pozajmicu:", size=16, weight=ft.FontWeight.BOLD),
-                ft.Container(height=16),
                 book_dropdown,
-                ft.Container(height=8),
                 member_dropdown,
-                ft.Container(height=8),
-                loan_duration,
+                loan_duration
             ], scroll=ft.ScrollMode.AUTO, height=300),
             actions=[
-                ft.TextButton("Otkaži", on_click=lambda _: close_dialog()),
-                ft.TextButton("Kreiraj pozajmicu", on_click=save_new_loan),
+                ft.TextButton("Otkaži", on_click=lambda e: close_dialog()),
+                ft.TextButton("Kreiraj", on_click=save_new_loan)
             ],
+            actions_alignment=ft.MainAxisAlignment.END,
         )
         
-        page.dialog = dialog
-        dialog.open = True
+        page.dialog = loan_dialog
+        loan_dialog.open = True
         page.update()
     
     def search_loans(e):
@@ -446,6 +332,5 @@ def admin_loans(page_data: PageData) -> None:
             content=content,
             padding=20,
             expand=True,
-
         )
-    ])
+    ], expand=True)

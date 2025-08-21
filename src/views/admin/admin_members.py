@@ -3,7 +3,7 @@ from flet_navigator import PageData
 from components.navbar import NavBar
 from components.snack_bar import show_snack_bar
 from models.member import Member
-from utils.global_state import global_state
+from controllers.admin_controller import get_all_members, add_member, update_member, delete_member
 from datetime import datetime
 
 def admin_members(page_data: PageData) -> None:
@@ -11,92 +11,79 @@ def admin_members(page_data: PageData) -> None:
     page.title = "Biblioteka | Upravljanje članovima"
     navbar_content = NavBar("admin", page_data)
     
-    # Get members from global state or initialize with sample data
-    members_data = global_state.members if global_state.members else []
+    # Get members from database
+    members_data = get_all_members()
     
     # If no members exist, initialize with sample data
     if not members_data:
-        members_data = [
+        # Add sample members using the database function
+        sample_members = [
             {
-                "id": 1,
                 "first_name": "Ana",
                 "last_name": "Petrović",
                 "email": "ana.petrovic@email.com",
                 "phone": "+381 11 123 4567",
                 "address": "Beograd, Srbija",
                 "membership_number": "MEM001",
-                "membership_type": "regular",
-                "membership_status": "active",
-                "membership_start_date": "2023-01-15",
-                "membership_end_date": "2024-01-15",
-                "max_loans": 5,
-                "current_loans": 2
+                "membership_type": "regular"
             },
             {
-                "id": 2,
                 "first_name": "Marko",
                 "last_name": "Jovanović",
                 "email": "marko.jovanovic@email.com",
                 "phone": "+381 11 234 5678",
                 "address": "Novi Sad, Srbija",
                 "membership_number": "MEM002",
-                "membership_type": "student",
-                "membership_status": "active",
-                "membership_start_date": "2023-03-20",
-                "membership_end_date": "2024-03-20",
-                "max_loans": 3,
-                "current_loans": 1
+                "membership_type": "student"
             },
             {
-                "id": 3,
                 "first_name": "Jelena",
                 "last_name": "Nikolić",
                 "email": "jelena.nikolic@email.com",
                 "phone": "+381 11 345 6789",
                 "address": "Niš, Srbija",
                 "membership_number": "MEM003",
-                "membership_type": "senior",
-                "membership_status": "active",
-                "membership_start_date": "2023-06-10",
-                "membership_end_date": "2024-06-10",
-                "max_loans": 7,
-                "current_loans": 0
+                "membership_type": "senior"
             }
         ]
-        global_state.members = members_data
-        global_state.save_data_to_file()
+        
+        for member in sample_members:
+            add_member(**member)
+        
+        # Reload members after adding sample data
+        members_data = get_all_members()
     
     def show_member_dialog(member=None, is_edit=False):
         title = "Izmeni člana" if is_edit else "Dodaj novog člana"
         
         first_name_tf = ft.TextField(
             label="Ime",
-            value=member["first_name"] if member else "",
+            value=member.get("first_name", "") if member else "",
             expand=True
         )
         last_name_tf = ft.TextField(
             label="Prezime",
-            value=member["last_name"] if member else "",
+            value=member.get("last_name", "") if member else "",
             expand=True
         )
         email_tf = ft.TextField(
             label="E-adresa",
-            value=member["email"] if member else "",
+            value=member.get("email", "") if member else "",
             expand=True
         )
         phone_tf = ft.TextField(
             label="Telefon",
-            value=member["phone"] if member else "",
+            value=member.get("phone", "") if member else "",
             expand=True
         )
         address_tf = ft.TextField(
             label="Adresa",
-            value=member["address"] if member else "",
+            value=member.get("address", "") if member else "",
             expand=True
         )
         membership_type_dd = ft.Dropdown(
             label="Tip članstva",
-            value=member["membership_type"] if member else "regular",
+            value=member.get("membership_type", "regular") if member else "regular",
             options=[
                 ft.dropdown.Option("regular", "Redovno"),
                 ft.dropdown.Option("student", "Studentsko"),
@@ -106,7 +93,7 @@ def admin_members(page_data: PageData) -> None:
         )
         membership_status_dd = ft.Dropdown(
             label="Status članstva",
-            value=member["membership_status"] if member else "active",
+            value=member.get("membership_status", "active") if member else "active",
             options=[
                 ft.dropdown.Option("active", "Aktivno"),
                 ft.dropdown.Option("suspended", "Suspendovano"),
@@ -122,37 +109,34 @@ def admin_members(page_data: PageData) -> None:
             
             if is_edit:
                 # Update existing member
-                member["first_name"] = first_name_tf.value
-                member["last_name"] = last_name_tf.value
-                member["email"] = email_tf.value
-                member["phone"] = phone_tf.value
-                member["address"] = address_tf.value
-                member["membership_type"] = membership_type_dd.value
-                member["membership_status"] = membership_status_dd.value
-                show_snack_bar(page, "Član je uspešno ažuriran", "SUCCESS")
+                success, message = update_member(
+                    member_id=member["id"],
+                    first_name=first_name_tf.value,
+                    last_name=last_name_tf.value,
+                    phone=phone_tf.value,
+                    address=address_tf.value,
+                    membership_type=membership_type_dd.value,
+                    membership_status=membership_status_dd.value
+                )
+                if success:
+                    show_snack_bar(page, "Član je uspešno ažuriran", "SUCCESS")
+                else:
+                    show_snack_bar(page, f"Greška: {message}", "ERROR")
             else:
                 # Add new member
-                new_member = {
-                    "id": len(members_data) + 1,
-                    "first_name": first_name_tf.value,
-                    "last_name": last_name_tf.value,
-                    "email": email_tf.value,
-                    "phone": phone_tf.value,
-                    "address": address_tf.value,
-                    "membership_number": f"MEM{len(members_data) + 1:03d}",
-                    "membership_type": membership_type_dd.value,
-                    "membership_status": membership_status_dd.value,
-                    "membership_start_date": datetime.now().strftime("%Y-%m-%d"),
-                    "membership_end_date": datetime.now().replace(year=datetime.now().year + 1).strftime("%Y-%m-%d"),
-                    "max_loans": 5,
-                    "current_loans": 0
-                }
-                members_data.append(new_member)
-                show_snack_bar(page, "Novi član je uspešno dodat", "SUCCESS")
-            
-            # Save to global state
-            global_state.members = members_data
-            global_state.save_data_to_file()
+                success, message = add_member(
+                    first_name=first_name_tf.value,
+                    last_name=last_name_tf.value,
+                    email=email_tf.value,
+                    phone=phone_tf.value,
+                    address=address_tf.value,
+                    membership_number=f"MEM{len(members_data) + 1:03d}",
+                    membership_type=membership_type_dd.value
+                )
+                if success:
+                    show_snack_bar(page, "Novi član je uspešno dodat", "SUCCESS")
+                else:
+                    show_snack_bar(page, f"Greška: {message}", "ERROR")
             
             page.update()
             dialog.open = False
@@ -177,19 +161,17 @@ def admin_members(page_data: PageData) -> None:
         dialog.open = True
         page.update()
     
-    def delete_member(member_id):
-        member = next((m for m in members_data if m["id"] == member_id), None)
-        if member:
-            members_data.remove(member)
-            # Save to global state
-            global_state.members = members_data
-            global_state.save_data_to_file()
+    def delete_member_func(member_id):
+        success, message = delete_member(member_id)
+        if success:
             show_snack_bar(page, "Član je uspešno obrisan", "SUCCESS")
-            refresh_members_list()
+        else:
+            show_snack_bar(page, f"Greška: {message}", "ERROR")
+        refresh_members_list()
     
     def show_delete_dialog(member):
         def confirm_delete(e):
-            delete_member(member["id"])
+            delete_member_func(member["id"])
             delete_dialog.open = False
             page.update()
         
@@ -212,142 +194,111 @@ def admin_members(page_data: PageData) -> None:
         page.update()
     
     def refresh_members_list():
+        nonlocal members_data
+        members_data = get_all_members()
+        update_members_list(members_data)
+    
+    def update_members_list(members_to_show):
         members_list.controls.clear()
         
-        for member in members_data:
+        for member in members_to_show:
             status_color = {
                 "active": ft.Colors.GREEN,
                 "suspended": ft.Colors.ORANGE,
                 "expired": ft.Colors.RED
-            }.get(member.get("membership_status", "active"), ft.Colors.GREY)
+            }.get(member.get('membership_status', 'active'), ft.Colors.BLUE)
             
-            members_list.controls.append(
-                ft.Card(
-                    content=ft.Container(
-                        content=ft.Column([
-                            ft.ListTile(
-                                leading=ft.Icon(ft.Icons.PERSON, color=ft.Colors.BLUE),
-                                                            title=ft.Text(f"{member.get('first_name', '')} {member.get('last_name', '')}"),
-                            subtitle=ft.Text(f"Član broj: {member.get('membership_number', '')}"),
+            member_card = ft.Card(
+                content=ft.Container(
+                    content=ft.Column([
+                        ft.Row([
+                            ft.Icon(
+                                ft.Icons.PERSON,
+                                color=status_color,
+                                size=24,
                             ),
-                            ft.Container(
-                                content=ft.Column([
-                                    ft.Row([
-                                        ft.Text(f"E-adresa: {member.get('email', '')}", size=12),
-                                        ft.Text(f"Telefon: {member.get('phone', '')}", size=12),
-                                    ]),
-                                    ft.Row([
-                                        ft.Text(f"Tip: {member.get('membership_type', '')}", size=12),
-                                        ft.Container(
-                                            content=ft.Text(
-                                                member.get("membership_status", "active").upper(),
-                                                color=ft.Colors.WHITE,
-                                                size=10,
-                                                weight=ft.FontWeight.BOLD
-                                            ),
-                                            bgcolor=status_color,
-                                            padding=ft.padding.all(4),
-                                            border_radius=ft.border_radius.all(4)
-                                        ),
-                                    ]),
-                                    ft.Row([
-                                        ft.Text(f"Pozajmice: {member.get('current_loans', 0)}/{member.get('max_loans', 5)}", size=12),
-                                        ft.Text(f"Članstvo do: {member.get('membership_end_date', 'N/A')}", size=12),
-                                    ])
-                                ]),
-                                padding=ft.padding.only(left=16, right=16, bottom=16)
+                            ft.Column([
+                                ft.Text(
+                                    f"{member.get('first_name', '')} {member.get('last_name', '')}",
+                                    size=18,
+                                    weight=ft.FontWeight.BOLD,
+                                ),
+                                ft.Text(
+                                    f"Email: {member.get('email', '')}",
+                                    size=14,
+                                    color=ft.Colors.GREY_600,
+                                ),
+                                ft.Text(
+                                    f"Telefon: {member.get('phone', '')}",
+                                    size=12,
+                                    color=ft.Colors.GREY_500,
+                                ),
+                                ft.Text(
+                                    f"Broj članstva: {member.get('membership_number', '')}",
+                                    size=12,
+                                    color=ft.Colors.GREY_500,
+                                ),
+                            ], expand=True),
+                            ft.Column([
+                                ft.Text(
+                                    member.get('membership_status', 'active').title(),
+                                    size=12,
+                                    color=status_color,
+                                    weight=ft.FontWeight.BOLD,
+                                ),
+                                ft.Text(
+                                    f"Pozajmice: {member.get('current_loans', 0)}/{member.get('max_loans', 5)}",
+                                    size=12,
+                                    color=ft.Colors.GREY_500,
+                                ),
+                            ], horizontal_alignment=ft.CrossAxisAlignment.END),
+                        ], spacing=16),
+                        ft.Row([
+                            ft.TextButton(
+                                "Uredi",
+                                icon=ft.Icons.EDIT,
+                                on_click=lambda e, m=member: show_member_dialog(m, True),
                             ),
-                            ft.Row([
-                                ft.TextButton("Izmeni", on_click=lambda e, m=member: show_member_dialog(m, True)),
-                                ft.TextButton("Obriši", on_click=lambda e, m=member: show_delete_dialog(m), style=ft.ButtonStyle(color=ft.Colors.RED))
-                            ], alignment=ft.MainAxisAlignment.END)
-                        ])
-                    )
-                )
+                            ft.TextButton(
+                                "Obriši",
+                                icon=ft.Icons.DELETE,
+                                on_click=lambda e, m=member: show_delete_dialog(m),
+                                style=ft.ButtonStyle(color=ft.Colors.RED),
+                            ),
+                        ], alignment=ft.MainAxisAlignment.END),
+                    ], spacing=12),
+                    padding=16,
+                ),
             )
+            members_list.controls.append(member_card)
         
         page.update()
     
-    # Search functionality
-    search_tf = ft.TextField(
-        label="Pretraži članove",
-        prefix_icon=ft.Icons.SEARCH,
-        on_change=lambda e: filter_members(e.control.value),
-        expand=True
-    )
-    
-    def filter_members(search_term):
-        if not search_term:
-            refresh_members_list()
+    def search_members(e):
+        query = search_tf.value.lower()
+        if not query:
+            update_members_list(members_data)
             return
         
-        filtered_members = [
-            member for member in members_data
-            if search_term.lower() in f"{member.get('first_name', '')} {member.get('last_name', '')}".lower() or
-               search_term.lower() in member.get('email', '').lower() or
-               search_term.lower() in member.get('membership_number', '').lower()
-        ]
-        
-        members_list.controls.clear()
-        for member in filtered_members:
-            # Same card creation logic as in refresh_members_list
-            status_color = {
-                "active": ft.Colors.GREEN,
-                "suspended": ft.Colors.ORANGE,
-                "expired": ft.Colors.RED
-            }.get(member.get("membership_status", "active"), ft.Colors.GREY)
-            
-            members_list.controls.append(
-                ft.Card(
-                    content=ft.Container(
-                        content=ft.Column([
-                            ft.ListTile(
-                                leading=ft.Icon(ft.Icons.PERSON, color=ft.Colors.BLUE),
-                                                            title=ft.Text(f"{member.get('first_name', '')} {member.get('last_name', '')}"),
-                            subtitle=ft.Text(f"Član broj: {member.get('membership_number', '')}"),
-                            ),
-                            ft.Container(
-                                content=ft.Column([
-                                    ft.Row([
-                                        ft.Text(f"E-adresa: {member.get('email', '')}", size=12),
-                                        ft.Text(f"Telefon: {member.get('phone', '')}", size=12),
-                                    ]),
-                                    ft.Row([
-                                        ft.Text(f"Tip: {member.get('membership_type', '')}", size=12),
-                                        ft.Container(
-                                            content=ft.Text(
-                                                member.get("membership_status", "active").upper(),
-                                                color=ft.Colors.WHITE,
-                                                size=10,
-                                                weight=ft.FontWeight.BOLD
-                                            ),
-                                            bgcolor=status_color,
-                                            padding=ft.padding.all(4),
-                                            border_radius=ft.border_radius.all(4)
-                                        ),
-                                    ]),
-                                    ft.Row([
-                                        ft.Text(f"Pozajmice: {member.get('current_loans', 0)}/{member.get('max_loans', 5)}", size=12),
-                                        ft.Text(f"Članstvo do: {member.get('membership_end_date', 'N/A')}", size=12),
-                                    ])
-                                ]),
-                                padding=ft.padding.only(left=16, right=16, bottom=16)
-                            ),
-                            ft.Row([
-                                ft.TextButton("Izmeni", on_click=lambda e, m=member: show_member_dialog(m, True)),
-                                ft.TextButton("Obriši", on_click=lambda e, m=member: show_delete_dialog(m), style=ft.ButtonStyle(color=ft.Colors.RED))
-                            ], alignment=ft.MainAxisAlignment.END)
-                        ])
-                    )
-                )
-            )
-        
-        page.update()
+        filtered_members = [member for member in members_data if 
+                           query in member.get('first_name', '').lower() or
+                           query in member.get('last_name', '').lower() or
+                           query in member.get('email', '').lower() or
+                           query in member.get('membership_number', '').lower()]
+        update_members_list(filtered_members)
     
-    # Statistics cards
+    # Search input
+    search_tf = ft.TextField(
+        label="Pretraži članove...",
+        prefix_icon=ft.Icons.SEARCH,
+        expand=True,
+        on_submit=search_members,
+    )
+    
+    # Statistics
     total_members = len(members_data)
-    active_members = len([m for m in members_data if m.get("membership_status", "active") == "active"])
-    student_members = len([m for m in members_data if m.get("membership_type", "regular") == "student"])
+    active_members = len([m for m in members_data if m.get('membership_status') == 'active'])
+    student_members = len([m for m in members_data if m.get('membership_type') == 'student'])
     
     stats_row = ft.Row([
         ft.Card(
@@ -364,7 +315,7 @@ def admin_members(page_data: PageData) -> None:
             content=ft.Container(
                 content=ft.Column([
                     ft.Text(f"{active_members}", size=32, weight=ft.FontWeight.BOLD, color=ft.Colors.GREEN),
-                    ft.Text("Aktivnih", size=14)
+                    ft.Text("Aktivnih članova", size=14)
                 ], horizontal_alignment=ft.CrossAxisAlignment.CENTER),
                 padding=ft.padding.all(16)
             ),
@@ -414,6 +365,5 @@ def admin_members(page_data: PageData) -> None:
             ], scroll=ft.ScrollMode.AUTO, expand=True),
             padding=20,
             expand=True,
-
         )
-    ])
+    ], expand=True)
