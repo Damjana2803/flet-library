@@ -2,7 +2,8 @@ import flet as ft
 from flet_navigator import PageData
 from components.navbar import NavBar
 from components.responsive_card import ResponsiveCard
-from utils.global_state import global_state
+from utils.session_manager import get_current_user
+from controllers.admin_controller import get_all_books
 
 def member_dashboard_screen(page_data: PageData) -> None:
     page = page_data.page
@@ -14,8 +15,8 @@ def member_dashboard_screen(page_data: PageData) -> None:
     # Navigation bar
     navbar_content = NavBar("member", page_data)
     
-    # Get current user data
-    user = global_state.get_user()
+    # Get current user data from session manager
+    user = get_current_user()
     
     def navigate_to_search(e):
         page_data.navigate('book_search')
@@ -62,8 +63,8 @@ def member_dashboard_screen(page_data: PageData) -> None:
         on_click=navigate_to_profile
     )
     
-    # Get real data from global state
-    books = global_state.get("books", [])
+    # Get real data from database
+    books = get_all_books()
     available_books = len([book for book in books if book.get('available_copies', 0) > 0])
     
     # Quick stats row

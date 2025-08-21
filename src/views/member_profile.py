@@ -2,7 +2,7 @@ import flet as ft
 from flet_navigator import PageData
 from components.navbar import NavBar
 from components.snack_bar import show_snack_bar
-from utils.global_state import global_state
+from utils.session_manager import get_current_user
 
 def member_profile(page_data: PageData) -> None:
     page = page_data.page
@@ -11,18 +11,20 @@ def member_profile(page_data: PageData) -> None:
     # Navigation bar
     navbar_content = NavBar("member", page_data)
     
-    # Get current logged-in member data (same logic as member_dashboard)
-    current_user = global_state.get_user()
+    # Get current logged-in member data from session manager
+    current_user = get_current_user()
     current_member = None
     
     if current_user and not current_user.get('is_admin', False):
         # For member users, the login_data already contains member information
         current_member = current_user
     elif current_user:
-        # Fallback: search by email in members list
+        # Fallback: search by email in members list from database
         current_user_email = current_user.get('email')
         if current_user_email:
-            for member in global_state.members:
+            from controllers.admin_controller import get_all_members
+            all_members = get_all_members()
+            for member in all_members:
                 if member.get('email') == current_user_email:
                     current_member = member
                     break

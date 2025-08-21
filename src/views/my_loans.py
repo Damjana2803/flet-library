@@ -3,6 +3,8 @@ from flet_navigator import PageData
 from components.navbar import NavBar
 from components.snack_bar import show_snack_bar
 from datetime import datetime, timedelta
+from utils.session_manager import get_current_user
+from controllers.admin_controller import get_all_loans, return_loan
 
 def my_loans(page_data: PageData) -> None:
     page = page_data.page
@@ -11,11 +13,9 @@ def my_loans(page_data: PageData) -> None:
     # Navigation bar
     navbar_content = NavBar("member", page_data)
     
-    # Get current user and loans from global state
-    from utils.global_state import global_state
-    
-    current_user = global_state.get_user()
-    all_loans = global_state.loans if global_state.loans else []
+    # Get current user and loans from database
+    current_user = get_current_user()
+    all_loans = get_all_loans()
     
     # Filter loans for current user
     user_id = current_user.get("id")
@@ -27,11 +27,7 @@ def my_loans(page_data: PageData) -> None:
     
     def renew_loan(loan_id):
         """Renew a loan - extend the due date by 14 days"""
-        from utils.global_state import global_state
         from datetime import datetime, timedelta
-        
-        # Get all loans
-        all_loans = global_state.loans if global_state.loans else []
         
         # Find the loan and extend it
         loan_found = False
@@ -42,70 +38,33 @@ def my_loans(page_data: PageData) -> None:
                 current_due_date = datetime.strptime(loan.get('due_date'), "%Y-%m-%d")
                 new_due_date = current_due_date + timedelta(days=14)
                 
-                all_loans[i]['due_date'] = new_due_date.strftime("%Y-%m-%d")
-                loan_found = True
-                break
+                # Update the loan in the database
+                from controllers.admin_controller import update_loan
+                success, message = update_loan(loan_id, new_due_date.strftime("%Y-%m-%d"))
+                
+                if success:
+                    show_snack_bar(page, "Knjiga je uspešno produžena za 14 dana!", "SUCCESS")
+                    # Refresh the page
+                    page_data.navigate('my_loans')
+                else:
+                    show_snack_bar(page, f"Greška: {message}", "ERROR")
+                return
         
         if not loan_found:
             show_snack_bar(page, "Pozajmica nije pronađena ili je već vraćena!", "ERROR")
-            return
-        
-        # Save to global state
-        global_state.loans = all_loans
-        global_state.save_data_to_file()
-        
-        # Show success message and refresh
-        show_snack_bar(page, "Knjiga je uspešno produžena za 14 dana!", "SUCCESS")
-        
-        # Refresh the page
-        page_data.navigate('my_loans')
     
     def return_book(loan_id):
         """Return a book - mark loan as returned and update book availability"""
         try:
-            # Get all loans and books
-            all_loans = global_state.loans if global_state.loans else []
-            all_books = global_state.books if global_state.books else []
-            current_user = global_state.get_user()
+            # Use the database function to return the loan
+            success, message = return_loan(loan_id)
             
-            # Find the loan and mark it as returned
-            loan_found = False
-            book_id = None
-            
-            for i, loan in enumerate(all_loans):
-                if loan.get('id') == loan_id:
-                    all_loans[i]['status'] = 'returned'
-                    all_loans[i]['returned_date'] = datetime.now().strftime("%Y-%m-%d")
-                    book_id = loan.get('book_id')
-                    loan_found = True
-                    break
-            
-            if not loan_found:
-                show_snack_bar(page, "Pozajmica nije pronađena!", "ERROR")
-                return
-            
-            # Update book availability
-            if book_id:
-                for i, book in enumerate(all_books):
-                    if book.get('id') == book_id:
-                        all_books[i]['available_copies'] = book.get('available_copies', 0) + 1
-                        break
-            
-            # Update user's current loans count
-            if current_user:
-                current_user['current_loans'] = max(0, current_user.get('current_loans', 0) - 1)
-                global_state.user = current_user
-            
-            # Save to global state
-            global_state.loans = all_loans
-            global_state.books = all_books
-            global_state.save_data_to_file()
-            
-            # Show success message and refresh
-            show_snack_bar(page, "Knjiga je uspešno vraćena!", "SUCCESS")
-            
-            # Refresh the page by re-navigating
-            page_data.navigate('my_loans')
+            if success:
+                show_snack_bar(page, "Knjiga je uspešno vraćena!", "SUCCESS")
+                # Refresh the page by re-navigating
+                page_data.navigate('my_loans')
+            else:
+                show_snack_bar(page, f"Greška: {message}", "ERROR")
             
         except Exception as e:
             show_snack_bar(page, f"Greška: {str(e)}", "ERROR")

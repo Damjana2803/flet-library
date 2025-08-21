@@ -2,6 +2,8 @@ import flet as ft
 from flet_navigator import PageData
 from components.navbar import NavBar
 from components.snack_bar import SnackBar
+from controllers.admin_controller import get_all_books, create_loan
+from utils.session_manager import get_current_user
 
 def book_search(page_data: PageData) -> None:
     page = page_data.page
@@ -10,146 +12,75 @@ def book_search(page_data: PageData) -> None:
     # Navigation bar
     navbar_content = NavBar("member", page_data)
     
-    # Search results
+    # Search results and filters
     search_results = []
+    all_books = []
     
     def on_search(e):
-        query = search_tf.value.strip()
+        query = search_tf.value.strip() if search_tf.value else ""
+        selected_category = category_dropdown.value
+        selected_availability = availability_dropdown.value
         
-        # Get all books from global state
-        from utils.global_state import global_state
-        all_books = global_state.get("books", [])
+        print(f"🔍 DEBUG: Search triggered")
+        print(f"   Query: '{query}'")
+        print(f"   Category: '{selected_category}'")
+        print(f"   Availability: '{selected_availability}'")
+        print(f"   Total books loaded: {len(all_books)}")
         
-        # If no books exist, initialize with sample data
-        if not all_books:
-            all_books = [
-                {
-                    "id": 1,
-                    "title": "Rat i mir",
-                    "author": "Lav Tolstoj",
-                    "isbn": "978-86-7436-123-4",
-                    "category": "Roman",
-                    "publication_year": 1869,
-                    "publisher": "Laguna",
-                    "total_copies": 5,
-                    "available_copies": 3,
-                    "location": "Polica A-15",
-                    "status": "available"
-                },
-                {
-                    "id": 2,
-                    "title": "Ana Karenjina",
-                    "author": "Lav Tolstoj",
-                    "isbn": "978-86-7436-124-1",
-                    "category": "Roman",
-                    "publication_year": 1877,
-                    "publisher": "Laguna",
-                    "total_copies": 3,
-                    "available_copies": 0,
-                    "location": "Polica A-16",
-                    "status": "unavailable"
-                },
-                {
-                    "id": 3,
-                    "title": "Zločin i kazna",
-                    "author": "Fjodor Dostojevski",
-                    "isbn": "978-86-7436-125-8",
-                    "category": "Roman",
-                    "publication_year": 1866,
-                    "publisher": "Laguna",
-                    "total_copies": 4,
-                    "available_copies": 2,
-                    "location": "Polica A-17",
-                    "status": "available"
-                },
-                {
-                    "id": 4,
-                    "title": "Braća Karamazovi",
-                    "author": "Fjodor Dostojevski",
-                    "isbn": "978-86-7436-126-5",
-                    "category": "Roman",
-                    "publication_year": 1880,
-                    "publisher": "Laguna",
-                    "total_copies": 3,
-                    "available_copies": 1,
-                    "location": "Polica A-18",
-                    "status": "available"
-                },
-                {
-                    "id": 5,
-                    "title": "Idiot",
-                    "author": "Fjodor Dostojevski",
-                    "isbn": "978-86-7436-127-2",
-                    "category": "Roman",
-                    "publication_year": 1869,
-                    "publisher": "Laguna",
-                    "total_copies": 2,
-                    "available_copies": 0,
-                    "location": "Polica A-19",
-                    "status": "unavailable"
-                },
-                {
-                    "id": 6,
-                    "title": "Evgenij Onjegin",
-                    "author": "Aleksandar Puškin",
-                    "isbn": "978-86-7436-128-9",
-                    "category": "Roman",
-                    "publication_year": 1833,
-                    "publisher": "Laguna",
-                    "total_copies": 4,
-                    "available_copies": 2,
-                    "location": "Polica A-20",
-                    "status": "available"
-                },
-                {
-                    "id": 7,
-                    "title": "Majstor i Margarita",
-                    "author": "Mihail Bulgakov",
-                    "isbn": "978-86-7436-129-6",
-                    "category": "Roman",
-                    "publication_year": 1967,
-                    "publisher": "Laguna",
-                    "total_copies": 3,
-                    "available_copies": 1,
-                    "location": "Polica A-21",
-                    "status": "available"
-                },
-                {
-                    "id": 8,
-                    "title": "Doktor Živago",
-                    "author": "Boris Pasternak",
-                    "isbn": "978-86-7436-130-2",
-                    "category": "Roman",
-                    "publication_year": 1957,
-                    "publisher": "Laguna",
-                    "total_copies": 2,
-                    "available_copies": 0,
-                    "location": "Polica A-22",
-                    "status": "unavailable"
-                }
-            ]
-            global_state.set("books", all_books)
+        # Filter books based on search query and filters
+        filtered_books = []
+        query_lower = query.lower()
         
-        # Filter books based on search query
-        if query:
-            filtered_books = []
-            query_lower = query.lower()
-            for book in all_books:
-                if (query_lower in book.get("title", "").lower() or
-                    query_lower in book.get("author", "").lower() or
-                    query_lower in book.get("isbn", "").lower() or
-                    query_lower in book.get("category", "").lower()):
-                    filtered_books.append(book)
-            search_results.clear()
-            search_results.extend(filtered_books)
-        else:
-            # Show all books if no search query
-            search_results.clear()
-            search_results.extend(all_books)
+        for book in all_books:
+            # Check search query
+            matches_query = not query or (
+                query_lower in book.get("title", "").lower() or
+                query_lower in book.get("author", "").lower() or
+                query_lower in book.get("isbn", "").lower() or
+                query_lower in book.get("category", "").lower()
+            )
+            
+            # Check category filter - only apply if category is selected and not empty
+            matches_category = True
+            if selected_category and selected_category != "Sve kategorije":
+                matches_category = book.get("category", "") == selected_category
+            
+            # Check availability filter - only apply if availability is selected and not empty
+            matches_availability = True
+            if selected_availability and selected_availability != "Sve":
+                if selected_availability == "Dostupno":
+                    matches_availability = book.get("available_copies", 0) > 0
+                elif selected_availability == "Nedostupno":
+                    matches_availability = book.get("available_copies", 0) == 0
+            
+            if matches_query and matches_category and matches_availability:
+                filtered_books.append(book)
         
+        print(f"   Books after filtering: {len(filtered_books)}")
+        
+        search_results.clear()
+        search_results.extend(filtered_books)
         update_search_results()
     
+    def on_category_change(e):
+        print(f"📂 DEBUG: Category changed to: {category_dropdown.value}")
+        on_search(None)
+    
+    def on_availability_change(e):
+        print(f"📊 DEBUG: Availability changed to: {availability_dropdown.value}")
+        on_search(None)
+    
+    def reset_filters(e):
+        print(f"🔄 DEBUG: Resetting filters")
+        search_tf.value = ""
+        category_dropdown.value = "Sve kategorije"
+        availability_dropdown.value = "Sve"
+        print(f"   After reset - Search: '{search_tf.value}', Category: {category_dropdown.value}, Availability: {availability_dropdown.value}")
+        on_search(None)
+        page.update()
+    
     def update_search_results():
+        print(f"📋 DEBUG: Updating search results, count: {len(search_results)}")
         results_column.content.controls.clear()
         
         if not search_results:
@@ -254,11 +185,10 @@ def book_search(page_data: PageData) -> None:
     
     def borrow_book(book):
         """Borrow a book - create a new loan"""
-        from utils.global_state import global_state
         from datetime import datetime, timedelta
         
         # Get current user
-        current_user = global_state.get("user", {})
+        current_user = get_current_user()
         if not current_user:
             page.overlay.append(
                 SnackBar("Morate biti prijavljeni da iznajmite knjigu!", duration=3000)
@@ -277,67 +207,27 @@ def book_search(page_data: PageData) -> None:
             page.update()
             return
         
-        # Get all books and loans
-        all_books = global_state.get("books", [])
-        all_loans = global_state.get("loans", [])
-        
-        # Find the book and update its availability
-        book_found = False
-        for i, b in enumerate(all_books):
-            if b.get('id') == book.get('id'):
-                if b.get('available_copies', 0) > 0:
-                    all_books[i]['available_copies'] = b.get('available_copies', 0) - 1
-                    book_found = True
-                    break
-                else:
-                    page.overlay.append(
-                        SnackBar("Knjiga nije dostupna!", duration=3000)
-                    )
-                    page.update()
-                    return
-        
-        if not book_found:
-            page.overlay.append(
-                SnackBar("Knjiga nije pronađena!", duration=3000)
-            )
-            page.update()
-            return
-        
-        # Create new loan
-        loan_date = datetime.now()
-        due_date = loan_date + timedelta(days=14)  # 14 days loan period
-        
-        new_loan = {
-            'id': len(all_loans) + 1,
-            'book_id': book.get('id'),
-            'book_title': book.get('title'),
-            'book_author': book.get('author'),
-            'member_id': current_user.get('id'),
-            'member_name': f"{current_user.get('first_name', '')} {current_user.get('last_name', '')}",
-            'loan_date': loan_date.strftime("%Y-%m-%d"),
-            'due_date': due_date.strftime("%Y-%m-%d"),
-            'status': 'active',
-            'returned_date': None
-        }
-        
-        # Add loan to global state
-        all_loans.append(new_loan)
-        
-        # Update user's current loans count
-        current_user['current_loans'] = current_loans + 1
-        
-        # Save to global state
-        global_state.set("books", all_books)
-        global_state.set("loans", all_loans)
-        global_state.set("user", current_user)
-        
-        # Show success message
-        page.overlay.append(
-            SnackBar(
-                f"Knjiga '{book['title']}' je uspešno iznajmljena! Vraćanje: {due_date.strftime('%d.%m.%Y')}",
-                duration=4000
-            )
+        # Use database function to create loan
+        success, message = create_loan(
+            book_id=book.get('id'),
+            member_id=current_user.get('id')
         )
+        
+        if success:
+            # Show success message
+            due_date = datetime.now() + timedelta(days=14)
+            page.overlay.append(
+                SnackBar(
+                    f"Knjiga '{book['title']}' je uspešno iznajmljena! Vraćanje: {due_date.strftime('%d.%m.%Y')}",
+                    duration=4000
+                )
+            )
+            # Refresh search results to update availability
+            load_books()
+        else:
+            page.overlay.append(
+                SnackBar(f"Greška: {message}", duration=3000)
+            )
         page.update()
     
     def show_book_details(book):
@@ -371,18 +261,36 @@ def book_search(page_data: PageData) -> None:
         page.dialog.open = False
         page.update()
     
+    def load_books():
+        """Load all books from database and update category options"""
+        nonlocal all_books
+        all_books = get_all_books()
+        print(f"📚 DEBUG: Loaded {len(all_books)} books from database")
+        if all_books:
+            print(f"   Sample book: {all_books[0]}")
+        
+        # Get unique categories from books
+        categories = set()
+        for book in all_books:
+            if book.get("category"):
+                categories.add(book.get("category"))
+        
+        # Update category dropdown options
+        category_dropdown.options = [ft.dropdown.Option("Sve kategorije")] + [
+            ft.dropdown.Option(cat) for cat in sorted(categories)
+        ]
+        category_dropdown.value = "Sve kategorije"
+        
+        print(f"   Available categories: {sorted(categories)}")
+        
+        on_search(None)
+    
     # Search input
     search_tf = ft.TextField(
         label="Pretraži knjige...",
         prefix_icon=ft.Icons.SEARCH,
         expand=True,
-        on_submit=on_search,
-    )
-    
-    search_button = ft.ElevatedButton(
-        "Pretraži",
-        icon=ft.Icons.SEARCH,
-        on_click=on_search,
+        on_change=on_search,
     )
     
     # Filters
@@ -390,13 +298,10 @@ def book_search(page_data: PageData) -> None:
         label="Kategorija",
         options=[
             ft.dropdown.Option("Sve kategorije"),
-            ft.dropdown.Option("Roman"),
-            ft.dropdown.Option("Naučna fantastika"),
-            ft.dropdown.Option("Detektivski"),
-            ft.dropdown.Option("Istorijski"),
-            ft.dropdown.Option("Naučna literatura"),
         ],
         width=200,
+        on_change=on_category_change,
+        value="Sve kategorije",
     )
     
     availability_dropdown = ft.Dropdown(
@@ -407,6 +312,15 @@ def book_search(page_data: PageData) -> None:
             ft.dropdown.Option("Nedostupno"),
         ],
         width=200,
+        on_change=on_availability_change,
+        value="Sve",
+    )
+    
+    # Reset button
+    reset_button = ft.ElevatedButton(
+        "Resetuj pretragu",
+        icon=ft.Icons.REFRESH,
+        on_click=reset_filters,
     )
     
     # Results column with ListView for better scrolling
@@ -416,8 +330,10 @@ def book_search(page_data: PageData) -> None:
             spacing=16,
             expand=True,
         ),
-        height=500,  # Fixed height to enable scrolling
         expand=True,
+        border=ft.border.all(1, ft.Colors.GREY_300),  # Add border to distinguish the scrollable area
+        border_radius=8,
+        padding=10,
     )
     
     # Main content
@@ -430,11 +346,11 @@ def book_search(page_data: PageData) -> None:
                 color=ft.Colors.BLUE_900,
             ),
             ft.Row(
-                [search_tf, search_button],
+                [search_tf],
                 spacing=16,
             ),
             ft.Row(
-                [category_dropdown, availability_dropdown],
+                [category_dropdown, availability_dropdown, reset_button],
                 spacing=16,
             ),
             ft.Divider(height=32),
@@ -447,18 +363,22 @@ def book_search(page_data: PageData) -> None:
             results_column,
         ],
         spacing=16,
+        scroll=ft.ScrollMode.AUTO,
         expand=True,
     )
     
     # Load all books when page opens
-    on_search(None)
+    load_books()
     
     return ft.Column([
         navbar_content,
         ft.Container(
-            content=content,
+            content=ft.Column(
+                [content],
+                scroll=ft.ScrollMode.AUTO,
+                expand=True,
+            ),
             padding=20,
             expand=True,
-
         )
-    ])
+    ], expand=True)
