@@ -53,145 +53,464 @@ def admin_members(page_data: PageData) -> None:
         # Reload members after adding sample data
         members_data = get_all_members()
     
-    def show_member_dialog(member=None, is_edit=False):
-        title = "Izmeni člana" if is_edit else "Dodaj novog člana"
+    # Check if mobile screen
+    is_mobile = page.width < 768 if page.width else False
+    
+    # Dialog fields for adding new member
+    first_name_field = ft.TextField(
+        hint_text="Ana",
+        hint_style=ft.TextStyle(color=ft.Colors.GREY_400),
+        on_change=lambda e: validate_field(first_name_field, "Ime je obavezno")
+    )
+    last_name_field = ft.TextField(
+        hint_text="Petrović",
+        hint_style=ft.TextStyle(color=ft.Colors.GREY_400),
+        on_change=lambda e: validate_field(last_name_field, "Prezime je obavezno")
+    )
+    email_field = ft.TextField(
+        hint_text="ana.petrovic@email.com",
+        hint_style=ft.TextStyle(color=ft.Colors.GREY_400),
+        on_change=lambda e: validate_field(email_field, "Email je obavezan")
+    )
+    phone_field = ft.TextField(
+        hint_text="+381 11 123 4567",
+        hint_style=ft.TextStyle(color=ft.Colors.GREY_400)
+    )
+    address_field = ft.TextField(
+        hint_text="Beograd, Srbija",
+        hint_style=ft.TextStyle(color=ft.Colors.GREY_400)
+    )
+    membership_type_field = ft.Dropdown(
+        hint_text="Izaberite tip članstva",
+        hint_style=ft.TextStyle(color=ft.Colors.GREY_400),
+        options=[
+            ft.dropdown.Option("regular", "Redovno"),
+            ft.dropdown.Option("student", "Studentsko"),
+            ft.dropdown.Option("senior", "Penzionersko")
+        ]
+    )
+    membership_status_field = ft.Dropdown(
+        hint_text="Izaberite status",
+        hint_style=ft.TextStyle(color=ft.Colors.GREY_400),
+        options=[
+            ft.dropdown.Option("active", "Aktivno"),
+            ft.dropdown.Option("suspended", "Suspendovano"),
+            ft.dropdown.Option("expired", "Isteklo")
+        ]
+    )
+    
+    # Edit member dialog fields
+    edit_first_name_field = ft.TextField(
+        hint_text="Ana",
+        hint_style=ft.TextStyle(color=ft.Colors.GREY_400),
+        on_change=lambda e: validate_field(edit_first_name_field, "Ime je obavezno")
+    )
+    edit_last_name_field = ft.TextField(
+        hint_text="Petrović",
+        hint_style=ft.TextStyle(color=ft.Colors.GREY_400),
+        on_change=lambda e: validate_field(edit_last_name_field, "Prezime je obavezno")
+    )
+    edit_email_field = ft.TextField(
+        hint_text="ana.petrovic@email.com",
+        hint_style=ft.TextStyle(color=ft.Colors.GREY_400),
+        on_change=lambda e: validate_field(edit_email_field, "Email je obavezan")
+    )
+    edit_phone_field = ft.TextField(
+        hint_text="+381 11 123 4567",
+        hint_style=ft.TextStyle(color=ft.Colors.GREY_400)
+    )
+    edit_address_field = ft.TextField(
+        hint_text="Beograd, Srbija",
+        hint_style=ft.TextStyle(color=ft.Colors.GREY_400)
+    )
+    edit_membership_type_field = ft.Dropdown(
+        hint_text="Izaberite tip članstva",
+        hint_style=ft.TextStyle(color=ft.Colors.GREY_400),
+        options=[
+            ft.dropdown.Option("regular", "Redovno"),
+            ft.dropdown.Option("student", "Studentsko"),
+            ft.dropdown.Option("senior", "Penzionersko")
+        ]
+    )
+    edit_membership_status_field = ft.Dropdown(
+        hint_text="Izaberite status",
+        hint_style=ft.TextStyle(color=ft.Colors.GREY_400),
+        options=[
+            ft.dropdown.Option("active", "Aktivno"),
+            ft.dropdown.Option("suspended", "Suspendovano"),
+            ft.dropdown.Option("expired", "Isteklo")
+        ]
+    )
+    
+    # Custom modal overlays
+    # Add member modal
+    add_modal_overlay = ft.Container(
+        content=ft.Container(
+            content=ft.Column([
+                ft.Container(
+                    content=ft.Row([
+                        ft.Text("Dodaj novog člana", size=20, weight=ft.FontWeight.BOLD, expand=True),
+                        ft.IconButton(
+                            icon=ft.Icons.CLOSE,
+                            on_click=lambda e: close_add_dialog(),
+                            tooltip="Zatvori"
+                        )
+                    ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
+                    border=ft.border.only(bottom=ft.border.BorderSide(1, ft.Colors.GREY_300)),
+                    padding=ft.padding.only(bottom=20),
+                ),
+                ft.Container(
+                    content=ft.Column([
+                        ft.Text("Ime *", size=14, weight=ft.FontWeight.BOLD, color=ft.Colors.GREY_700),
+                        first_name_field,
+                        ft.Text("Prezime *", size=14, weight=ft.FontWeight.BOLD, color=ft.Colors.GREY_700),
+                        last_name_field,
+                        ft.Text("Email *", size=14, weight=ft.FontWeight.BOLD, color=ft.Colors.GREY_700),
+                        email_field,
+                        ft.Text("Telefon", size=14, weight=ft.FontWeight.BOLD, color=ft.Colors.GREY_700),
+                        phone_field,
+                        ft.Text("Adresa", size=14, weight=ft.FontWeight.BOLD, color=ft.Colors.GREY_700),
+                        address_field,
+                        ft.Text("Tip članstva", size=14, weight=ft.FontWeight.BOLD, color=ft.Colors.GREY_700),
+                        membership_type_field,
+                        ft.Text("Status članstva", size=14, weight=ft.FontWeight.BOLD, color=ft.Colors.GREY_700),
+                        membership_status_field
+                    ], spacing=5, scroll=ft.ScrollMode.AUTO),
+                    padding=ft.padding.only(top=10),
+                    expand=True,
+                ),
+                ft.Container(
+                    content=ft.Row([
+                        ft.ElevatedButton("Otkaži", on_click=lambda e: close_add_dialog()),
+                        ft.ElevatedButton("Dodaj", on_click=lambda e: save_member(), style=ft.ButtonStyle(bgcolor=ft.Colors.BLUE, color=ft.Colors.WHITE)),
+                    ], alignment=ft.MainAxisAlignment.END, spacing=10),
+                    border=ft.border.only(top=ft.border.BorderSide(1, ft.Colors.GREY_300)),
+                    padding=ft.padding.only(top=20),
+                ),
+            ], spacing=20),
+            padding=30,
+            bgcolor=ft.Colors.WHITE,
+            border_radius=10,
+            width=500 if not is_mobile else 350,
+            margin=ft.margin.only(top=20, bottom=20),
+        ),
+        alignment=ft.alignment.center,
+        bgcolor=ft.Colors.with_opacity(0.5, ft.Colors.BLACK),
+        visible=False,
+    )
+    
+    # Edit member modal
+    edit_modal_overlay = ft.Container(
+        content=ft.Container(
+            content=ft.Column([
+                ft.Container(
+                    content=ft.Row([
+                        ft.Text("Izmeni člana", size=20, weight=ft.FontWeight.BOLD, expand=True),
+                        ft.IconButton(
+                            icon=ft.Icons.CLOSE,
+                            on_click=lambda e: close_edit_dialog(),
+                            tooltip="Zatvori"
+                        )
+                    ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
+                    border=ft.border.only(bottom=ft.border.BorderSide(1, ft.Colors.GREY_300)),
+                    padding=ft.padding.only(bottom=20),
+                ),
+                ft.Container(
+                    content=ft.Column([
+                        ft.Text("Ime *", size=14, weight=ft.FontWeight.BOLD, color=ft.Colors.GREY_700),
+                        edit_first_name_field,
+                        ft.Text("Prezime *", size=14, weight=ft.FontWeight.BOLD, color=ft.Colors.GREY_700),
+                        edit_last_name_field,
+                        ft.Text("Email *", size=14, weight=ft.FontWeight.BOLD, color=ft.Colors.GREY_700),
+                        edit_email_field,
+                        ft.Text("Telefon", size=14, weight=ft.FontWeight.BOLD, color=ft.Colors.GREY_700),
+                        edit_phone_field,
+                        ft.Text("Adresa", size=14, weight=ft.FontWeight.BOLD, color=ft.Colors.GREY_700),
+                        edit_address_field,
+                        ft.Text("Tip članstva", size=14, weight=ft.FontWeight.BOLD, color=ft.Colors.GREY_700),
+                        edit_membership_type_field,
+                        ft.Text("Status članstva", size=14, weight=ft.FontWeight.BOLD, color=ft.Colors.GREY_700),
+                        edit_membership_status_field
+                    ], spacing=5, scroll=ft.ScrollMode.AUTO),
+                    padding=ft.padding.only(top=10),
+                    expand=True,
+                ),
+                ft.Container(
+                    content=ft.Row([
+                        ft.ElevatedButton("Otkaži", on_click=lambda e: close_edit_dialog()),
+                        ft.ElevatedButton("Sačuvaj", on_click=lambda e: update_member_action(), style=ft.ButtonStyle(bgcolor=ft.Colors.BLUE, color=ft.Colors.WHITE)),
+                    ], alignment=ft.MainAxisAlignment.END, spacing=10),
+                    border=ft.border.only(top=ft.border.BorderSide(1, ft.Colors.GREY_300)),
+                    padding=ft.padding.only(top=20),
+                ),
+            ], spacing=20),
+            padding=30,
+            bgcolor=ft.Colors.WHITE,
+            border_radius=10,
+            width=500 if not is_mobile else 350,
+            margin=ft.margin.only(top=20, bottom=20),
+        ),
+        alignment=ft.alignment.center,
+        bgcolor=ft.Colors.with_opacity(0.5, ft.Colors.BLACK),
+        visible=False,
+    )
+    
+    # Delete confirmation modal
+    delete_modal_overlay = ft.Container(
+        content=ft.Container(
+            content=ft.Column([
+                ft.Row([
+                    ft.Text("Potvrda brisanja", size=20, weight=ft.FontWeight.BOLD, expand=True),
+                    ft.IconButton(
+                        icon=ft.Icons.CLOSE,
+                        on_click=lambda e: close_delete_dialog(),
+                        tooltip="Zatvori"
+                    )
+                ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
+                ft.Text("Da li ste sigurni da želite da obrišete ovog člana?", size=16),
+                ft.Row([
+                    ft.ElevatedButton("Otkaži", on_click=lambda e: close_delete_dialog()),
+                    ft.ElevatedButton("Obriši", on_click=lambda e: confirm_delete_member(), style=ft.ButtonStyle(bgcolor=ft.Colors.RED, color=ft.Colors.WHITE)),
+                ], alignment=ft.MainAxisAlignment.END, spacing=10),
+            ], spacing=10),
+            padding=20,
+            bgcolor=ft.Colors.WHITE,
+            border_radius=10,
+            width=400 if not is_mobile else 300,
+            height=200,
+        ),
+        alignment=ft.alignment.center,
+        bgcolor=ft.Colors.with_opacity(0.5, ft.Colors.BLACK),
+        visible=False,
+    )
+    
+    # Variable to store member being deleted
+    current_deleting_member_id = None
+    current_editing_member_id = None
+    
+    def validate_field(field, error_message):
+        """Validate a field and show/hide error styling"""
+        if not field.value or field.value.strip() == "":
+            field.border_color = ft.Colors.RED
+            field.error_text = error_message
+        else:
+            field.border_color = None
+            field.error_text = None
+        page.update()
+    
+    def validate_all_fields():
+        """Validate all required fields and return True if all valid"""
+        is_valid = True
         
-        first_name_tf = ft.TextField(
-            label="Ime",
-            value=member.get("first_name", "") if member else "",
-            expand=True
-        )
-        last_name_tf = ft.TextField(
-            label="Prezime",
-            value=member.get("last_name", "") if member else "",
-            expand=True
-        )
-        email_tf = ft.TextField(
-            label="E-adresa",
-            value=member.get("email", "") if member else "",
-            expand=True
-        )
-        phone_tf = ft.TextField(
-            label="Telefon",
-            value=member.get("phone", "") if member else "",
-            expand=True
-        )
-        address_tf = ft.TextField(
-            label="Adresa",
-            value=member.get("address", "") if member else "",
-            expand=True
-        )
-        membership_type_dd = ft.Dropdown(
-            label="Tip članstva",
-            value=member.get("membership_type", "regular") if member else "regular",
-            options=[
-                ft.dropdown.Option("regular", "Redovno"),
-                ft.dropdown.Option("student", "Studentsko"),
-                ft.dropdown.Option("senior", "Penzionersko")
-            ],
-            expand=True
-        )
-        membership_status_dd = ft.Dropdown(
-            label="Status članstva",
-            value=member.get("membership_status", "active") if member else "active",
-            options=[
-                ft.dropdown.Option("active", "Aktivno"),
-                ft.dropdown.Option("suspended", "Suspendovano"),
-                ft.dropdown.Option("expired", "Isteklo")
-            ],
-            expand=True
-        )
+        # Validate add fields
+        if not first_name_field.value or first_name_field.value.strip() == "":
+            first_name_field.border_color = ft.Colors.RED
+            first_name_field.error_text = "Ime je obavezno"
+            is_valid = False
         
-        def save_member(e):
-            if not all([first_name_tf.value, last_name_tf.value, email_tf.value]):
-                show_snack_bar(page, "Popunite sva obavezna polja", "ERROR")
+        if not last_name_field.value or last_name_field.value.strip() == "":
+            last_name_field.border_color = ft.Colors.RED
+            last_name_field.error_text = "Prezime je obavezno"
+            is_valid = False
+        
+        if not email_field.value or email_field.value.strip() == "":
+            email_field.border_color = ft.Colors.RED
+            email_field.error_text = "Email je obavezan"
+            is_valid = False
+        
+        page.update()
+        return is_valid
+    
+    def validate_all_edit_fields():
+        """Validate all required edit fields and return True if all valid"""
+        is_valid = True
+        
+        # Validate edit fields
+        if not edit_first_name_field.value or edit_first_name_field.value.strip() == "":
+            edit_first_name_field.border_color = ft.Colors.RED
+            edit_first_name_field.error_text = "Ime je obavezno"
+            is_valid = False
+        
+        if not edit_last_name_field.value or edit_last_name_field.value.strip() == "":
+            edit_last_name_field.border_color = ft.Colors.RED
+            edit_last_name_field.error_text = "Prezime je obavezno"
+            is_valid = False
+        
+        if not edit_email_field.value or edit_email_field.value.strip() == "":
+            edit_email_field.border_color = ft.Colors.RED
+            edit_email_field.error_text = "Email je obavezan"
+            is_valid = False
+        
+        page.update()
+        return is_valid
+    
+    def open_add_dialog():
+        try:
+            add_modal_overlay.visible = True
+            page.update()
+        except Exception as e:
+            show_snack_bar(page, f"Greška: {str(e)}", "ERROR")
+    
+    def close_add_dialog():
+        add_modal_overlay.visible = False
+        page.update()
+    
+    def open_edit_dialog(member_data):
+        # Prepopulate fields with member data
+        edit_first_name_field.value = member_data.get('first_name', '')
+        edit_last_name_field.value = member_data.get('last_name', '')
+        edit_email_field.value = member_data.get('email', '')
+        edit_phone_field.value = member_data.get('phone', '')
+        edit_address_field.value = member_data.get('address', '')
+        edit_membership_type_field.value = member_data.get('membership_type', 'regular')
+        edit_membership_status_field.value = member_data.get('membership_status', 'active')
+        
+        # Show the edit modal
+        edit_modal_overlay.visible = True
+        page.update()
+    
+    def close_edit_dialog():
+        edit_modal_overlay.visible = False
+        page.update()
+    
+    def save_member():
+        try:
+            # Validate all required fields first
+            if not validate_all_fields():
+                show_snack_bar(page, "Molimo popunite sva obavezna polja", "ERROR")
                 return
             
-            if is_edit:
-                # Update existing member
-                success, message = update_member(
-                    member_id=member["id"],
-                    first_name=first_name_tf.value,
-                    last_name=last_name_tf.value,
-                    phone=phone_tf.value,
-                    address=address_tf.value,
-                    membership_type=membership_type_dd.value,
-                    membership_status=membership_status_dd.value
-                )
-                if success:
-                    show_snack_bar(page, "Član je uspešno ažuriran", "SUCCESS")
-                else:
-                    show_snack_bar(page, f"Greška: {message}", "ERROR")
-            else:
-                # Add new member
-                success, message = add_member(
-                    first_name=first_name_tf.value,
-                    last_name=last_name_tf.value,
-                    email=email_tf.value,
-                    phone=phone_tf.value,
-                    address=address_tf.value,
-                    membership_number=f"MEM{len(members_data) + 1:03d}",
-                    membership_type=membership_type_dd.value
-                )
-                if success:
-                    show_snack_bar(page, "Novi član je uspešno dodat", "SUCCESS")
-                else:
-                    show_snack_bar(page, f"Greška: {message}", "ERROR")
+            # Add member
+            success, message = add_member(
+                first_name=first_name_field.value,
+                last_name=last_name_field.value,
+                email=email_field.value,
+                phone=phone_field.value or "",
+                address=address_field.value or "",
+                membership_number=f"MEM{len(members_data) + 1:03d}",
+                membership_type=membership_type_field.value or "regular"
+            )
             
-            page.update()
-            dialog.open = False
-            refresh_members_list()
+            if success:
+                show_snack_bar(page, "Član uspešno dodat!", "SUCCESS")
+                close_add_dialog()
+                clear_dialog_fields()
+                refresh_members_list()
+            else:
+                show_snack_bar(page, f"Greška: {message}", "ERROR")
+                
+        except Exception as e:
+            show_snack_bar(page, f"Greška: {str(e)}", "ERROR")
+    
+    def update_member_action():
+        try:
+            # Validate all required fields first
+            if not validate_all_edit_fields():
+                show_snack_bar(page, "Molimo popunite sva obavezna polja", "ERROR")
+                return
+            
+            # Update member
+            success, message = update_member(
+                member_id=current_editing_member_id,
+                first_name=edit_first_name_field.value,
+                last_name=edit_last_name_field.value,
+                phone=edit_phone_field.value or "",
+                address=edit_address_field.value or "",
+                membership_type=edit_membership_type_field.value or "regular",
+                membership_status=edit_membership_status_field.value or "active"
+            )
+            
+            if success:
+                show_snack_bar(page, "Član uspešno ažuriran!", "SUCCESS")
+                close_edit_dialog()
+                clear_edit_dialog_fields()
+                refresh_members_list()
+            else:
+                show_snack_bar(page, f"Greška: {message}", "ERROR")
+                
+        except Exception as e:
+            show_snack_bar(page, f"Greška: {str(e)}", "ERROR")
+    
+    def clear_dialog_fields():
+        first_name_field.value = ""
+        last_name_field.value = ""
+        email_field.value = ""
+        phone_field.value = ""
+        address_field.value = ""
+        membership_type_field.value = None
+        membership_status_field.value = None
         
-        dialog = ft.AlertDialog(
-            title=ft.Text(title),
-            content=ft.Column([
-                ft.Row([first_name_tf, last_name_tf]),
-                email_tf,
-                phone_tf,
-                address_tf,
-                ft.Row([membership_type_dd, membership_status_dd])
-            ], scroll=ft.ScrollMode.AUTO, height=400),
-            actions=[
-                ft.TextButton("Otkaži", on_click=lambda e: setattr(dialog, 'open', False)),
-                ft.TextButton("Sačuvaj", on_click=save_member)
-            ]
-        )
+        # Clear validation errors
+        first_name_field.border_color = None
+        first_name_field.error_text = None
+        last_name_field.border_color = None
+        last_name_field.error_text = None
+        email_field.border_color = None
+        email_field.error_text = None
         
-        page.dialog = dialog
-        dialog.open = True
         page.update()
     
-    def delete_member_func(member_id):
-        success, message = delete_member(member_id)
-        if success:
-            show_snack_bar(page, "Član je uspešno obrisan", "SUCCESS")
+    def clear_edit_dialog_fields():
+        edit_first_name_field.value = ""
+        edit_last_name_field.value = ""
+        edit_email_field.value = ""
+        edit_phone_field.value = ""
+        edit_address_field.value = ""
+        edit_membership_type_field.value = None
+        edit_membership_status_field.value = None
+        
+        # Clear validation errors
+        edit_first_name_field.border_color = None
+        edit_first_name_field.error_text = None
+        edit_last_name_field.border_color = None
+        edit_last_name_field.error_text = None
+        edit_email_field.border_color = None
+        edit_email_field.error_text = None
+        
+        page.update()
+    
+    def edit_member(member_id):
+        nonlocal current_editing_member_id
+        current_editing_member_id = member_id
+        
+        # Find the member data
+        member_data = None
+        for member in members_data:
+            if member.get('id') == member_id:
+                member_data = member
+                break
+        
+        if member_data:
+            open_edit_dialog(member_data)
         else:
-            show_snack_bar(page, f"Greška: {message}", "ERROR")
-        refresh_members_list()
+            show_snack_bar(page, "Član nije pronađen", "ERROR")
     
-    def show_delete_dialog(member):
-        def confirm_delete(e):
-            delete_member_func(member["id"])
-            delete_dialog.open = False
-            page.update()
+    def delete_member_confirm(member_id):
+        nonlocal current_deleting_member_id
+        current_deleting_member_id = member_id
         
-        def cancel_delete(e):
-            delete_dialog.open = False
-            page.update()
-        
-        delete_dialog = ft.AlertDialog(
-            title=ft.Text("Potvrda brisanja"),
-            content=ft.Text(f"Da li ste sigurni da želite da obrišete člana {member['first_name']} {member['last_name']}?"),
-            actions=[
-                ft.TextButton("Otkaži", on_click=cancel_delete),
-                ft.TextButton("Obriši", on_click=confirm_delete, style=ft.ButtonStyle(color=ft.Colors.RED))
-            ],
-            actions_alignment=ft.MainAxisAlignment.END,
-        )
-        
-        page.dialog = delete_dialog
-        delete_dialog.open = True
+        # Show the delete confirmation modal
+        delete_modal_overlay.visible = True
         page.update()
+    
+    def close_delete_dialog():
+        delete_modal_overlay.visible = False
+        page.update()
+    
+    def confirm_delete_member():
+        try:
+            success, message = delete_member(current_deleting_member_id)
+            if success:
+                show_snack_bar(page, "Član uspešno obrisan!", "SUCCESS")
+                refresh_members_list()
+            else:
+                show_snack_bar(page, f"Greška pri brisanju člana: {message}", "ERROR")
+        except Exception as e:
+            show_snack_bar(page, f"Greška: {str(e)}", "ERROR")
+        finally:
+            close_delete_dialog()
+    
+
     
     def refresh_members_list():
         nonlocal members_data
@@ -257,12 +576,12 @@ def admin_members(page_data: PageData) -> None:
                             ft.TextButton(
                                 "Uredi",
                                 icon=ft.Icons.EDIT,
-                                on_click=lambda e, m=member: show_member_dialog(m, True),
+                                on_click=lambda e, m=member: edit_member(m.get('id')),
                             ),
                             ft.TextButton(
                                 "Obriši",
                                 icon=ft.Icons.DELETE,
-                                on_click=lambda e, m=member: show_delete_dialog(m),
+                                on_click=lambda e, m=member: delete_member_confirm(m.get('id')),
                                 style=ft.ButtonStyle(color=ft.Colors.RED),
                             ),
                         ], alignment=ft.MainAxisAlignment.END),
@@ -275,7 +594,7 @@ def admin_members(page_data: PageData) -> None:
         page.update()
     
     def search_members(e):
-        query = search_tf.value.lower()
+        query = e.control.value.lower() if e.control.value else ""
         if not query:
             update_members_list(members_data)
             return
@@ -292,7 +611,7 @@ def admin_members(page_data: PageData) -> None:
         label="Pretraži članove...",
         prefix_icon=ft.Icons.SEARCH,
         expand=True,
-        on_submit=search_members,
+        on_change=search_members,
     )
     
     # Statistics
@@ -334,7 +653,7 @@ def admin_members(page_data: PageData) -> None:
     ])
     
     # Members list
-    members_list = ft.Column(scroll=ft.ScrollMode.AUTO, expand=True, height=400)
+    members_list = ft.Column(scroll=ft.ScrollMode.AUTO, expand=True)
     
     # Header with search and add button
     header_row = ft.Row([
@@ -342,28 +661,33 @@ def admin_members(page_data: PageData) -> None:
         ft.ElevatedButton(
             "Dodaj člana",
             icon=ft.Icons.ADD,
-            on_click=lambda e: show_member_dialog()
+            on_click=lambda e: open_add_dialog()
         )
     ])
     
     # Initialize the list
     refresh_members_list()
     
-    return ft.Column([
-        navbar_content,
-        ft.Container(
-            content=ft.Column([
-                ft.Container(
-                    content=ft.Text("Upravljanje članovima", size=24, weight=ft.FontWeight.BOLD),
-                    padding=ft.padding.only(bottom=16)
-                ),
-                stats_row,
-                ft.Container(height=16),
-                header_row,
-                ft.Container(height=16),
-                members_list
-            ], scroll=ft.ScrollMode.AUTO, expand=True),
-            padding=20,
-            expand=True,
-        )
+    return ft.Stack([
+        ft.Column([
+            navbar_content,
+            ft.Container(
+                content=ft.Column([
+                    ft.Container(
+                        content=ft.Text("Upravljanje članovima", size=24, weight=ft.FontWeight.BOLD),
+                        padding=ft.padding.only(bottom=16)
+                    ),
+                    stats_row,
+                    ft.Container(height=16),
+                    header_row,
+                    ft.Container(height=16),
+                    members_list
+                ], scroll=ft.ScrollMode.AUTO, expand=True),
+                padding=20,
+                expand=True,
+            )
+        ], expand=True),
+        add_modal_overlay,  # Add the modal overlay on top
+        edit_modal_overlay,
+        delete_modal_overlay
     ], expand=True)
