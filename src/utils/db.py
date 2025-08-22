@@ -5,7 +5,18 @@ from datetime import datetime
 load_dotenv()
 
 def db_init():
-	conn = sqlite3.connect(os.getenv('DB_NAME'))
+	db_name = os.getenv('DB_NAME')
+	if not db_name:
+		db_name = "flet-library.db"
+	
+	# If running from src directory, go up one level to find the database
+	if os.path.exists(os.path.join(os.getcwd(), '..', db_name)):
+		db_path = os.path.join(os.getcwd(), '..', db_name)
+	else:
+		db_path = db_name
+	
+	print(f"🔗 DB_INIT: Connecting to database: {db_path}")
+	conn = sqlite3.connect(db_path)
 
 	cursor = conn.cursor()
 	

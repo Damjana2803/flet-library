@@ -1,6 +1,5 @@
 from models.user import User
 from models.faculty import Faculty
-from utils.global_state import global_state
 from models.book import Book
 from models.member import Member
 from models.loan import Loan
@@ -20,7 +19,10 @@ from utils.library_db import (
     return_loan as db_return_loan,
     update_loan as db_update_loan,
     delete_loan as db_delete_loan,
-    get_library_statistics as db_get_library_statistics
+    get_library_statistics as db_get_library_statistics,
+    create_reservation as db_create_reservation,
+    get_member_reservations as db_get_member_reservations,
+    cancel_reservation as db_cancel_reservation
 )
 
 async def get_all_users():
@@ -119,3 +121,15 @@ def delete_loan(loan_id):
 def get_library_statistics():
     """Get library statistics"""
     return db_get_library_statistics()
+
+def create_reservation(book_id, member_id):
+    """Create a new reservation"""
+    return db_create_reservation(book_id, member_id)
+
+def get_member_reservations(member_id):
+    """Get all reservations for a member"""
+    return db_get_member_reservations(member_id)
+
+def cancel_reservation(reservation_id, member_id):
+    """Cancel a reservation"""
+    return db_cancel_reservation(reservation_id, member_id)

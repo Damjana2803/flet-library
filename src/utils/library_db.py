@@ -8,7 +8,18 @@ load_dotenv()
 
 def get_db_connection():
     """Get a database connection"""
-    return sqlite3.connect(os.getenv('DB_NAME'))
+    db_name = os.getenv('DB_NAME')
+    if not db_name:
+        db_name = "flet-library.db"
+    
+    # If running from src directory, go up one level to find the database
+    if os.path.exists(os.path.join(os.getcwd(), '..', db_name)):
+        db_path = os.path.join(os.getcwd(), '..', db_name)
+    else:
+        db_path = db_name
+    
+    print(f"🔗 LIBRARY_DB: Connecting to database: {db_path}")
+    return sqlite3.connect(db_path)
 
 # Book operations
 def get_all_books() -> List[Dict]:
@@ -481,54 +492,173 @@ def delete_loan(loan_id: int) -> Tuple[bool, str]:
     try:
         conn = get_db_connection()
         cursor = conn.cursor()
-        
-        # Get loan details
         cursor.execute('''
             SELECT book_id, member_id, status FROM library_loans WHERE id = ?
         ''', (loan_id,))
         loan_result = cursor.fetchone()
-        
         if not loan_result:
             conn.close()
             return False, "Pozajmica nije pronađena"
-        
         book_id, member_id, status = loan_result
-        
-        # If loan is active, need to restore book and member counts
         if status == 'active':
-            # Update book available copies
             cursor.execute('''
-                UPDATE library_books 
+                UPDATE library_books
                 SET available_copies = available_copies + 1
                 WHERE id = ?
             ''', (book_id,))
-            
-            # Update member current loans
             cursor.execute('''
-                UPDATE library_members 
+                UPDATE library_members
                 SET current_loans = current_loans - 1
                 WHERE id = ?
             ''', (member_id,))
-        
-        # Delete the loan
         cursor.execute("DELETE FROM library_loans WHERE id = ?", (loan_id,))
-        
         conn.commit()
         conn.close()
         return True, "Pozajmica uspešno obrisana"
-        
     except Exception as e:
         if conn:
             conn.rollback()
             conn.close()
         return False, f"Greška pri brisanju pozajmice: {str(e)}"
 
+# Reservation operations
+def create_reservation(book_id: int, member_id: int) -> Tuple[bool, str]:
+    """Create a new reservation"""
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        
+        # Check if book exists
+        cursor.execute("SELECT title, available_copies FROM library_books WHERE id = ?", (book_id,))
+        book_result = cursor.fetchone()
+        if not book_result:
+            conn.close()
+            return False, "Knjiga nije pronađena"
+        
+        book_title, available_copies = book_result
+        
+        # Check if member exists
+        cursor.execute("SELECT first_name, last_name FROM library_members WHERE id = ?", (member_id,))
+        member_result = cursor.fetchone()
+        if not member_result:
+            conn.close()
+            return False, "Član nije pronađen"
+        
+        # Check if book is already reserved by this member
+        cursor.execute("""
+            SELECT id FROM library_reservations 
+            WHERE book_id = ? AND member_id = ? AND status = 'active'
+        """, (book_id, member_id))
+        if cursor.fetchone():
+            conn.close()
+            return False, "Već ste rezervisali ovu knjigu"
+        
+        # Get next reservation ID
+        cursor.execute("SELECT MAX(id) FROM library_reservations")
+        max_id = cursor.fetchone()[0]
+        next_id = (max_id or 0) + 1
+        
+        # Create reservation (7 days expiry)
+        reservation_date = datetime.now().date()
+        expiry_date = reservation_date + timedelta(days=7)
+        
+        cursor.execute('''
+            INSERT INTO library_reservations 
+            (id, book_id, member_id, reservation_date, expiry_date, status, created_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+        ''', (
+            next_id, book_id, member_id, reservation_date.isoformat(), 
+            expiry_date.isoformat(), 'active', datetime.now().isoformat()
+        ))
+        
+        conn.commit()
+        conn.close()
+        return True, f"Knjiga '{book_title}' je uspešno rezervisana"
+        
+    except Exception as e:
+        if conn:
+            conn.rollback()
+            conn.close()
+        return False, f"Greška pri kreiranju rezervacije: {str(e)}"
+
+def get_member_reservations(member_id: int) -> List[Dict]:
+    """Get all reservations for a member"""
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        
+        cursor.execute('''
+            SELECT r.id, r.book_id, b.title, b.author, r.reservation_date, 
+                   r.expiry_date, r.status, r.created_at
+            FROM library_reservations r
+            JOIN library_books b ON r.book_id = b.id
+            WHERE r.member_id = ?
+            ORDER BY r.created_at DESC
+        ''', (member_id,))
+        
+        reservations = []
+        for row in cursor.fetchall():
+            reservations.append({
+                'id': row[0],
+                'book_id': row[1],
+                'book_title': row[2],
+                'book_author': row[3],
+                'reservation_date': row[4],
+                'expiry_date': row[5],
+                'status': row[6],
+                'created_at': row[7]
+            })
+        
+        conn.close()
+        return reservations
+        
+    except Exception as e:
+        if conn:
+            conn.close()
+        return []
+
+def cancel_reservation(reservation_id: int, member_id: int) -> Tuple[bool, str]:
+    """Cancel a reservation"""
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        
+        # Check if reservation exists and belongs to member
+        cursor.execute("""
+            SELECT id FROM library_reservations 
+            WHERE id = ? AND member_id = ? AND status = 'active'
+        """, (reservation_id, member_id))
+        
+        if not cursor.fetchone():
+            conn.close()
+            return False, "Rezervacija nije pronađena ili je već otkazana"
+        
+        cursor.execute("""
+            UPDATE library_reservations 
+            SET status = 'cancelled', updated_at = ?
+            WHERE id = ?
+        """, (datetime.now().isoformat(), reservation_id))
+        
+        conn.commit()
+        conn.close()
+        return True, "Rezervacija je uspešno otkazana"
+        
+    except Exception as e:
+        if conn:
+            conn.rollback()
+            conn.close()
+        return False, f"Greška pri otkazivanju rezervacije: {str(e)}"
+
 # User authentication
 def authenticate_user(email: str, password_hash: str) -> Optional[Dict]:
     """Authenticate a user"""
+    print(f"🔍 LIBRARY_DB: authenticate_user called with email: {email}")
+    print(f"🔐 LIBRARY_DB: Password hash: {password_hash[:20]}...")
+    
     conn = get_db_connection()
     cursor = conn.cursor()
     
+    print("🔍 LIBRARY_DB: Executing database query...")
     cursor.execute('''
         SELECT id, email, password_hash, user_type, member_id
         FROM library_users
@@ -539,14 +669,20 @@ def authenticate_user(email: str, password_hash: str) -> Optional[Dict]:
     conn.close()
     
     if user:
-        return {
+        print("✅ LIBRARY_DB: User found in database!")
+        print(f"📋 LIBRARY_DB: Raw user data: {user}")
+        user_dict = {
             'id': user[0],
             'email': user[1],
             'password_hash': user[2],
             'user_type': user[3],
             'member_id': user[4]
         }
-    return None
+        print(f"🎯 LIBRARY_DB: Returning user dict: {user_dict}")
+        return user_dict
+    else:
+        print("❌ LIBRARY_DB: No user found with these credentials")
+        return None
 
 def create_user(email: str, password_hash: str, user_type: str = 'member', member_id: int = None) -> Tuple[bool, str]:
     """Create a new user"""

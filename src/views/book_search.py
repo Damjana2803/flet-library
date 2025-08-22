@@ -2,7 +2,7 @@ import flet as ft
 from flet_navigator import PageData
 from components.navbar import NavBar
 from components.snack_bar import SnackBar
-from controllers.admin_controller import get_all_books, create_loan
+from controllers.admin_controller import get_all_books, create_loan, create_reservation
 from utils.session_manager import get_current_user
 
 def book_search(page_data: PageData) -> None:
@@ -175,13 +175,7 @@ def book_search(page_data: PageData) -> None:
             borrow_book(book)
         else:
             # Reserve book
-            page.overlay.append(
-                SnackBar(
-                    f"Knjiga '{book['title']}' je rezervisana!",
-                    duration=3000
-                )
-            )
-        page.update()
+            reserve_book(book)
     
     def borrow_book(book):
         """Borrow a book - create a new loan"""
@@ -230,22 +224,67 @@ def book_search(page_data: PageData) -> None:
             )
         page.update()
     
+    def reserve_book(book):
+        """Reserve a book"""
+        # Get current user
+        current_user = get_current_user()
+        if not current_user:
+            page.overlay.append(
+                SnackBar("Morate biti prijavljeni da rezervišete knjigu!", duration=3000)
+            )
+            page.update()
+            return
+        
+        # Use database function to create reservation
+        success, message = create_reservation(
+            book_id=book.get('id'),
+            member_id=current_user.get('id')
+        )
+        
+        if success:
+            page.overlay.append(
+                SnackBar(f"Knjiga '{book['title']}' je uspešno rezervisana!", duration=4000)
+            )
+            # Refresh search results
+            load_books()
+        else:
+            page.overlay.append(
+                SnackBar(f"Greška: {message}", duration=3000)
+            )
+        page.update()
+    
     def show_book_details(book):
         # Show book details modal
         page.dialog = ft.AlertDialog(
             title=ft.Text(book["title"]),
             content=ft.Column(
                 [
-                    ft.Text(f"Autor: {book['author']}"),
-                    ft.Text(f"ISBN: {book['isbn']}"),
-                    ft.Text(f"Kategorija: {book['category']}"),
-                                         ft.Text(f"Godina: {book['publication_year']}"),
-                    ft.Text(f"Lokacija: {book['location']}"),
-                                         ft.Text(
-                         f"Status: {'Dostupno' if book.get('available_copies', 0) > 0 else 'Nedostupno'}",
-                         color=ft.Colors.GREEN if book.get('available_copies', 0) > 0 else ft.Colors.RED,
-                         weight=ft.FontWeight.BOLD,
-                     ),
+                    ft.Container(
+                        content=ft.Column([
+                            ft.Text(f"Autor: {book['author']}", size=16, weight=ft.FontWeight.BOLD),
+                            ft.Text(f"ISBN: {book['isbn']}", size=14),
+                            ft.Text(f"Kategorija: {book['category']}", size=14),
+                            ft.Text(f"Godina izdanja: {book['publication_year']}", size=14),
+                            ft.Text(f"Izdavač: {book['publisher']}", size=14),
+                            ft.Text(f"Lokacija: {book['location']}", size=14),
+                            ft.Text(f"Ukupno primeraka: {book['total_copies']}", size=14),
+                            ft.Text(f"Dostupno primeraka: {book['available_copies']}", size=14),
+                            ft.Text(
+                                f"Status: {'Dostupno' if book.get('available_copies', 0) > 0 else 'Nedostupno'}",
+                                size=14,
+                                color=ft.Colors.GREEN if book.get('available_copies', 0) > 0 else ft.Colors.RED,
+                                weight=ft.FontWeight.BOLD,
+                            ),
+                            ft.Divider(height=16),
+                            ft.Text("Opis:", size=14, weight=ft.FontWeight.BOLD),
+                            ft.Text(
+                                book.get('description', 'Nema opisa'),
+                                size=14,
+                                color=ft.Colors.GREY_600,
+                            ),
+                        ], spacing=8),
+                        padding=20,
+                    )
                 ],
                 spacing=8,
                 scroll=ft.ScrollMode.AUTO,

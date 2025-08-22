@@ -10,16 +10,24 @@ def login_user(email: str, password: str) -> tuple[bool, str, dict]:
     Returns: (success: bool, message: str, user_data: dict)
     """
     try:
+        print(f"🔍 LOGIN CONTROLLER: Starting authentication for email: {email}")
+        
         if not email or not password:
+            print("❌ LOGIN CONTROLLER: Empty email or password")
             return False, "Molimo unesite email i lozinku", {}
         
+        print("🔐 LOGIN CONTROLLER: Hashing password...")
         # Hash the password
         password_hash = hashlib.sha256(password.encode()).hexdigest()
+        print(f"🔐 LOGIN CONTROLLER: Password hash: {password_hash[:20]}...")
         
+        print("🔍 LOGIN CONTROLLER: Trying library database authentication...")
         # Try to authenticate with library database first
         user = authenticate_user(email, password_hash)
         
         if user:
+            print("✅ LOGIN CONTROLLER: User found in library database!")
+            print(f"📋 LOGIN CONTROLLER: User data: {user}")
             # User found in library database
             user_data = {
                 'id': user['id'],
@@ -28,8 +36,11 @@ def login_user(email: str, password: str) -> tuple[bool, str, dict]:
                 'member_id': user['member_id'],
                 'is_admin': user['user_type'] == 'admin'
             }
+            print(f"🎯 LOGIN CONTROLLER: Final user data: {user_data}")
+            print(f"🎯 LOGIN CONTROLLER: Is admin: {user_data['is_admin']}")
             return True, "Uspešna prijava", user_data
         
+        print("❌ LOGIN CONTROLLER: User not found in library database, trying legacy database...")
         # If not found in library database, try legacy Athena database
         # This maintains backward compatibility
         conn = db_init()
@@ -41,6 +52,8 @@ def login_user(email: str, password: str) -> tuple[bool, str, dict]:
         conn.close()
         
         if user_result:
+            print("✅ LOGIN CONTROLLER: User found in legacy database!")
+            print(f"📋 LOGIN CONTROLLER: Legacy user data: {user_result}")
             user_data = {
                 'id': user_result[0],
                 'name': user_result[1],
@@ -48,11 +61,14 @@ def login_user(email: str, password: str) -> tuple[bool, str, dict]:
                 'is_admin': bool(user_result[3]),
                 'user_type': 'admin' if user_result[3] else 'user'
             }
+            print(f"🎯 LOGIN CONTROLLER: Final user data from legacy: {user_data}")
             return True, "Uspešna prijava", user_data
         
+        print("❌ LOGIN CONTROLLER: User not found in either database")
         return False, "Pogrešan email ili lozinka", {}
         
     except Exception as e:
+        print(f"💥 LOGIN CONTROLLER: Exception occurred: {str(e)}")
         return False, f"Greška pri prijavi: {str(e)}", {}
 
 def register_user(email: str, password: str, first_name: str, last_name: str, 
