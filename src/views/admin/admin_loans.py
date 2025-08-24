@@ -343,7 +343,11 @@ def admin_loans(page_data: PageData) -> None:
                 search_tf.value = ""
                 refresh_loans_list()
             else:
-                show_snack_bar(page, f"Greška: {message}", "ERROR")
+                # Check if it's a loan limit error and display with orange warning color
+                if "maksimalan broj pozajmica" in message:
+                    show_snack_bar(page, f"Greška: {message}", "WARNING")
+                else:
+                    show_snack_bar(page, f"Greška: {message}", "ERROR")
                 
         except Exception as e:
             show_snack_bar(page, f"Greška: {str(e)}", "ERROR")

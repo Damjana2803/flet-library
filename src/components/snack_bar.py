@@ -8,9 +8,11 @@ class SnackBarTypes:
 bgcolors = {
 	'SUCCESS': ft.Colors.GREEN,
 	'ERROR': ft.Colors.RED_100,
+	'WARNING': ft.Colors.ORANGE_400,
 	'INFO': ft.Colors.WHITE60,
 	'error': ft.Colors.RED_100,
 	'success': ft.Colors.GREEN,
+	'warning': ft.Colors.ORANGE_400,
 	'info': ft.Colors.WHITE60,
 }
 

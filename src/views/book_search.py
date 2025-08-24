@@ -317,7 +317,7 @@ def book_search(page_data: PageData) -> None:
         
         if current_loans >= max_loans:
             page.overlay.append(
-                SnackBar(f"Možete iznajmiti maksimalno {max_loans} knjiga!", duration=3000)
+                SnackBar(f"Možete iznajmiti maksimalno {max_loans} knjiga!", duration=3000, snackbar_type='WARNING')
             )
             page.update()
             return
@@ -342,9 +342,15 @@ def book_search(page_data: PageData) -> None:
             # Refresh search results to update availability
             load_books()
         else:
-            page.overlay.append(
-                SnackBar(f"Greška: {message}", duration=3000)
-            )
+            # Check if it's a loan limit error and display with orange warning color
+            if "maksimalan broj pozajmica" in message:
+                page.overlay.append(
+                    SnackBar(f"Greška: {message}", duration=3000, snackbar_type='WARNING')
+                )
+            else:
+                page.overlay.append(
+                    SnackBar(f"Greška: {message}", duration=3000)
+                )
         page.update()
     
     def reserve_book(book):
