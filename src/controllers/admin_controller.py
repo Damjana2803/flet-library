@@ -25,7 +25,8 @@ from utils.library_db import (
     cancel_reservation as db_cancel_reservation,
     get_member_loans as db_get_member_loans,
     has_member_borrowed_book as db_has_member_borrowed_book,
-    has_member_reserved_book as db_has_member_reserved_book
+    has_member_reserved_book as db_has_member_reserved_book,
+    get_member_statistics as db_get_member_statistics
 )
 
 async def get_all_users():
@@ -148,3 +149,11 @@ def has_member_borrowed_book(member_id, book_id):
 def has_member_reserved_book(member_id, book_id):
     """Check if a member has already reserved a specific book"""
     return db_has_member_reserved_book(member_id, book_id)
+
+def get_member_statistics(member_id):
+    """Get comprehensive statistics for a specific member"""
+    return db_get_member_statistics(member_id)
+
+def fix_member_loan_counts():
+    """Fix current_loans field in library_members table based on actual active loans"""
+    return library_db.fix_member_loan_counts()

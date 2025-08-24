@@ -825,3 +825,135 @@ def has_member_reserved_book(member_id: int, book_id: int) -> bool:
         if conn:
             conn.close()
         return False
+
+def get_member_statistics(member_id: int) -> Dict:
+    """Get comprehensive statistics for a specific member"""
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        
+        # Get member details
+        cursor.execute('''
+            SELECT first_name, last_name, membership_type, membership_number, 
+                   max_loans, current_loans, membership_status
+            FROM library_members 
+            WHERE id = ?
+        ''', (member_id,))
+        
+        member_result = cursor.fetchone()
+        if not member_result:
+            conn.close()
+            return {}
+        
+        first_name, last_name, membership_type, membership_number, max_loans, current_loans, membership_status = member_result
+        
+        # Get active loans count from loans table (most accurate)
+        cursor.execute('''
+            SELECT COUNT(*) FROM library_loans 
+            WHERE member_id = ? AND status = 'active'
+        ''', (member_id,))
+        active_loans = cursor.fetchone()[0]
+        
+        # Get active reservations count
+        cursor.execute('''
+            SELECT COUNT(*) FROM library_reservations 
+            WHERE member_id = ? AND status = 'active'
+        ''', (member_id,))
+        active_reservations = cursor.fetchone()[0]
+        
+        # Get overdue loans count
+        from datetime import datetime
+        today = datetime.now().date().isoformat()
+        cursor.execute('''
+            SELECT COUNT(*) FROM library_loans 
+            WHERE member_id = ? AND status = 'active' AND due_date < ?
+        ''', (member_id, today))
+        overdue_loans = cursor.fetchone()[0]
+        
+        # Get total books borrowed (all time)
+        cursor.execute('''
+            SELECT COUNT(*) FROM library_loans 
+            WHERE member_id = ?
+        ''', (member_id,))
+        total_loans = cursor.fetchone()[0]
+        
+        # Get total available books in library
+        cursor.execute('''
+            SELECT SUM(available_copies) FROM library_books
+        ''', )
+        total_available_books = cursor.fetchone()[0] or 0
+        
+        conn.close()
+        
+        return {
+            'first_name': first_name,
+            'last_name': last_name,
+            'membership_type': membership_type,
+            'membership_number': membership_number,
+            'membership_status': membership_status,
+            'max_loans': max_loans,
+            'current_loans': current_loans,
+            'active_loans': active_loans,  # Use this for display (from loans table)
+            'active_reservations': active_reservations,
+            'overdue_loans': overdue_loans,
+            'total_loans': total_loans,
+            'total_available_books': total_available_books
+        }
+        
+    except Exception as e:
+        if conn:
+            conn.close()
+        print(f"Error getting member statistics: {e}")
+        return {}
+
+def fix_member_loan_counts() -> bool:
+    """Fix current_loans field in library_members table based on actual active loans"""
+    try:
+        print("🔧 FIXING: Starting member loan count correction...")
+        
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        
+        # Get all members
+        cursor.execute('SELECT id, first_name, last_name, current_loans FROM library_members')
+        members = cursor.fetchall()
+        
+        fixed_count = 0
+        
+        for member_id, first_name, last_name, current_loans in members:
+            # Count actual active loans for this member
+            cursor.execute('''
+                SELECT COUNT(*) FROM library_loans 
+                WHERE member_id = ? AND status = 'active'
+            ''', (member_id,))
+            actual_active_loans = cursor.fetchone()[0]
+            
+            if current_loans != actual_active_loans:
+                print(f"🔧 FIXING: Member {first_name} {last_name} (ID: {member_id})")
+                print(f"   - Current field: {current_loans}, Actual loans: {actual_active_loans}")
+                
+                # Update the current_loans field
+                cursor.execute('''
+                    UPDATE library_members 
+                    SET current_loans = ? 
+                    WHERE id = ?
+                ''', (actual_active_loans, member_id))
+                
+                fixed_count += 1
+                print(f"   ✅ Fixed: Updated to {actual_active_loans}")
+        
+        if fixed_count > 0:
+            conn.commit()
+            print(f"🎉 FIXING: Fixed {fixed_count} member(s) loan counts")
+        else:
+            print("✅ FIXING: All member loan counts are already correct")
+        
+        conn.close()
+        return True
+        
+    except Exception as e:
+        if conn:
+            conn.rollback()
+            conn.close()
+        print(f"💥 FIXING: Error fixing loan counts: {e}")
+        return False
