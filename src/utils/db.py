@@ -220,6 +220,13 @@ def db_init():
 	migrate_json_to_sqlite(cursor, conn)
 
 	conn.close()
+	
+	# Run seeder if database is empty
+	try:
+		from utils.seeder import run_seeder
+		run_seeder()
+	except Exception as e:
+		print(f"Error running seeder: {e}")
 
 def migrate_json_to_sqlite(cursor, conn):
 	"""Migrate data from JSON file to SQLite database"""
