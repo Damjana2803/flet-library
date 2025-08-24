@@ -23,6 +23,7 @@ from utils.library_db import (
     create_reservation as db_create_reservation,
     get_member_reservations as db_get_member_reservations,
     cancel_reservation as db_cancel_reservation,
+    renew_reservation as db_renew_reservation,
     get_member_loans as db_get_member_loans,
     has_member_borrowed_book as db_has_member_borrowed_book,
     has_member_reserved_book as db_has_member_reserved_book,
@@ -137,6 +138,10 @@ def get_member_reservations(member_id):
 def cancel_reservation(reservation_id, member_id):
     """Cancel a reservation"""
     return db_cancel_reservation(reservation_id, member_id)
+
+def renew_reservation(reservation_id, member_id):
+    """Renew a reservation - extend the expiry date by 7 days"""
+    return db_renew_reservation(reservation_id, member_id)
 
 def get_member_loans(member_id):
     """Get all loans for a member"""

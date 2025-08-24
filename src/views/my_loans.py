@@ -61,7 +61,7 @@ def my_loans(page_data: PageData) -> None:
             
             if success:
                 show_snack_bar(page, "Knjiga je uspešno vraćena!", "SUCCESS")
-                # Refresh the page by re-navigating
+                # Refresh the page immediately
                 page_data.navigate('my_loans')
             else:
                 show_snack_bar(page, f"Greška: {message}", "ERROR")
@@ -138,7 +138,7 @@ def my_loans(page_data: PageData) -> None:
                                                 weight=ft.FontWeight.BOLD,
                                             ),
                                             ft.Text(
-                                                f"Autor: {loan['book_author']}",
+                                                f"Autor: {loan.get('book_author', 'Nepoznati autor')}",
                                                 size=14,
                                                 color=ft.Colors.GREY_600,
                                             ),
@@ -304,7 +304,7 @@ def my_loans(page_data: PageData) -> None:
                                                 weight=ft.FontWeight.BOLD,
                                             ),
                                             ft.Text(
-                                                f"Autor: {loan['book_author']}",
+                                                f"Autor: {loan.get('book_author', 'Nepoznati autor')}",
                                                 size=14,
                                                 color=ft.Colors.GREY_600,
                                             ),

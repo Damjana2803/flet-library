@@ -8,6 +8,10 @@ def member_profile(page_data: PageData) -> None:
     page = page_data.page
     page.title = "Moj profil - Biblioteka"
     
+    # Check if mobile screen
+    page_width = page.width if page.width else 1200
+    is_mobile = page_width < 768
+    
     # Navigation bar
     navbar_content = NavBar("member", page_data)
     
@@ -328,8 +332,8 @@ def member_profile(page_data: PageData) -> None:
         ),
     )
     
-    # Main content with ListView for proper scrolling
-    content = ft.ListView(
+    # Main content with Column for proper scrolling
+    content = ft.Column(
         controls=[
             profile_header,
             ft.Divider(height=32),
@@ -341,6 +345,7 @@ def member_profile(page_data: PageData) -> None:
             ft.Container(height=50),  # Bottom spacing
         ],
         spacing=16,
+        scroll=ft.ScrollMode.AUTO,
         expand=True,
     )
     
@@ -350,6 +355,5 @@ def member_profile(page_data: PageData) -> None:
             content=content,
             padding=20,
             expand=True,
-
         )
-    ])
+    ], expand=True)

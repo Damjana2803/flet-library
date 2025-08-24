@@ -649,6 +649,50 @@ def cancel_reservation(reservation_id: int, member_id: int) -> Tuple[bool, str]:
             conn.close()
         return False, f"Greška pri otkazivanju rezervacije: {str(e)}"
 
+def renew_reservation(reservation_id: int, member_id: int) -> Tuple[bool, str]:
+    """Renew a reservation - extend the expiry date by 7 days"""
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        
+        # Check if reservation exists and belongs to member
+        cursor.execute("""
+            SELECT id, expiry_date FROM library_reservations 
+            WHERE id = ? AND member_id = ? AND status = 'active'
+        """, (reservation_id, member_id))
+        
+        result = cursor.fetchone()
+        if not result:
+            conn.close()
+            return False, "Rezervacija nije pronađena ili nije aktivna"
+        
+        reservation_id_db, current_expiry = result
+        
+        # Calculate new expiry date (7 days from current expiry)
+        from datetime import datetime, timedelta
+        if isinstance(current_expiry, str):
+            current_expiry_date = datetime.fromisoformat(current_expiry)
+        else:
+            current_expiry_date = current_expiry
+        
+        new_expiry_date = current_expiry_date + timedelta(days=7)
+        
+        cursor.execute("""
+            UPDATE library_reservations 
+            SET expiry_date = ?, updated_at = ?
+            WHERE id = ?
+        """, (new_expiry_date.isoformat(), datetime.now().isoformat(), reservation_id))
+        
+        conn.commit()
+        conn.close()
+        return True, "Rezervacija je uspešno produžena za 7 dana"
+        
+    except Exception as e:
+        if conn:
+            conn.rollback()
+            conn.close()
+        return False, f"Greška pri produžavanju rezervacije: {str(e)}"
+
 # User authentication
 def authenticate_user(email: str, password_hash: str) -> Optional[Dict]:
     """Authenticate a user"""
