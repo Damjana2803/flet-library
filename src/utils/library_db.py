@@ -196,6 +196,43 @@ def get_all_members() -> List[Dict]:
     conn.close()
     return members
 
+def get_member_by_id(member_id: int) -> Dict:
+    """Get a specific member by ID"""
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    
+    cursor.execute('''
+        SELECT id, first_name, last_name, email, phone, address, membership_number,
+               membership_type, membership_status, membership_start_date, membership_end_date,
+               max_loans, current_loans, created_at, updated_at
+        FROM library_members
+        WHERE id = ?
+    ''', (member_id,))
+    
+    row = cursor.fetchone()
+    conn.close()
+    
+    if row:
+        return {
+            'id': row[0],
+            'first_name': row[1],
+            'last_name': row[2],
+            'email': row[3],
+            'phone': row[4],
+            'address': row[5],
+            'membership_number': row[6],
+            'membership_type': row[7],
+            'membership_status': row[8],
+            'membership_start_date': row[9],
+            'membership_end_date': row[10],
+            'max_loans': row[11],
+            'current_loans': row[12],
+            'created_at': row[13],
+            'updated_at': row[14]
+        }
+    else:
+        return None
+
 def add_member(first_name: str, last_name: str, email: str, phone: str, address: str,
                membership_number: str, membership_type: str) -> Tuple[bool, str]:
     """Add a new member to database"""
@@ -268,6 +305,84 @@ def update_member(member_id: int, first_name: str, last_name: str, phone: str, a
             conn.rollback()
             conn.close()
         return False, f"Greška pri ažuriranju člana: {str(e)}"
+
+def update_member_profile(member_id: int, first_name: str, last_name: str, email: str, phone: str, address: str) -> Tuple[bool, str]:
+    """Update member profile information (first_name, last_name, email, phone, address)"""
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        
+        # Check if email is already taken by another member
+        cursor.execute("SELECT id FROM library_members WHERE email = ? AND id != ?", (email, member_id))
+        if cursor.fetchone():
+            conn.close()
+            return False, "E-adresa već postoji kod drugog člana"
+        
+        cursor.execute('''
+            UPDATE library_members 
+            SET first_name = ?, last_name = ?, email = ?, phone = ?, address = ?, updated_at = ?
+            WHERE id = ?
+        ''', (first_name, last_name, email, phone, address, datetime.now().isoformat(), member_id))
+        
+        if cursor.rowcount == 0:
+            conn.close()
+            return False, "Član nije pronađen"
+        
+        conn.commit()
+        conn.close()
+        return True, "Profil je uspešno ažuriran"
+        
+    except Exception as e:
+        if conn:
+            conn.rollback()
+            conn.close()
+        return False, f"Greška pri ažuriranju profila: {str(e)}"
+
+def update_user_password(user_id: int, new_password_hash: str) -> Tuple[bool, str]:
+    """Update user password in library_users table"""
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        
+        cursor.execute('''
+            UPDATE library_users 
+            SET password_hash = ?, updated_at = ?
+            WHERE id = ?
+        ''', (new_password_hash, datetime.now().isoformat(), user_id))
+        
+        if cursor.rowcount == 0:
+            conn.close()
+            return False, "Korisnik nije pronađen"
+        
+        conn.commit()
+        conn.close()
+        return True, "Lozinka je uspešno promenjena"
+        
+    except Exception as e:
+        if conn:
+            conn.rollback()
+            conn.close()
+        return False, f"Greška pri promeni lozinke: {str(e)}"
+
+def verify_user_password(user_id: int, password_hash: str) -> bool:
+    """Verify if the provided password hash matches the user's current password"""
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        
+        cursor.execute("SELECT password_hash FROM library_users WHERE id = ?", (user_id,))
+        result = cursor.fetchone()
+        
+        conn.close()
+        
+        if result:
+            return result[0] == password_hash
+        return False
+        
+    except Exception as e:
+        if conn:
+            conn.close()
+        return False
 
 def delete_member(member_id: int) -> Tuple[bool, str]:
     """Delete a member from database"""

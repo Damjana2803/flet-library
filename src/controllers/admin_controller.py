@@ -11,8 +11,10 @@ from utils.library_db import (
     update_book as db_update_book,
     delete_book as db_delete_book,
     get_all_members as db_get_all_members,
+    get_member_by_id as db_get_member_by_id,
     add_member as db_add_member,
     update_member as db_update_member,
+    update_member_profile as db_update_member_profile,
     delete_member as db_delete_member,
     get_all_loans as db_get_all_loans,
     create_loan as db_create_loan,
@@ -27,7 +29,9 @@ from utils.library_db import (
     get_member_loans as db_get_member_loans,
     has_member_borrowed_book as db_has_member_borrowed_book,
     has_member_reserved_book as db_has_member_reserved_book,
-    get_member_statistics as db_get_member_statistics
+    get_member_statistics as db_get_member_statistics,
+    update_user_password as db_update_user_password,
+    verify_user_password as db_verify_user_password
 )
 
 async def get_all_users():
@@ -103,6 +107,10 @@ def get_all_members():
     """Get all members from the library"""
     return db_get_all_members()
 
+def get_member_by_id(member_id):
+    """Get a specific member by ID"""
+    return db_get_member_by_id(member_id)
+
 def create_loan(book_id, member_id):
     """Create a new loan"""
     return db_create_loan(book_id, member_id)
@@ -162,3 +170,15 @@ def get_member_statistics(member_id):
 def fix_member_loan_counts():
     """Fix current_loans field in library_members table based on actual active loans"""
     return library_db.fix_member_loan_counts()
+
+def update_member_profile(member_id, first_name, last_name, email, phone, address):
+    """Update member profile information"""
+    return db_update_member_profile(member_id, first_name, last_name, email, phone, address)
+
+def update_user_password(user_id, new_password_hash):
+    """Update user password"""
+    return db_update_user_password(user_id, new_password_hash)
+
+def verify_user_password(user_id, password_hash):
+    """Verify user password"""
+    return db_verify_user_password(user_id, password_hash)
