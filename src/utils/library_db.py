@@ -747,3 +747,81 @@ def get_library_statistics() -> Dict:
         'active_loans': active_loans,
         'overdue_loans': overdue_loans
     }
+
+def get_member_loans(member_id: int) -> List[Dict]:
+    """Get all loans for a member"""
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        
+        cursor.execute('''
+            SELECT l.id, l.book_id, b.title, b.author, l.loan_date, 
+                   l.due_date, l.status, l.created_at
+            FROM library_loans l
+            JOIN library_books b ON l.book_id = b.id
+            WHERE l.member_id = ?
+            ORDER BY l.created_at DESC
+        ''', (member_id,))
+        
+        loans = []
+        for row in cursor.fetchall():
+            loans.append({
+                'id': row[0],
+                'book_id': row[1],
+                'book_title': row[2],
+                'book_author': row[3],
+                'loan_date': row[4],
+                'due_date': row[5],
+                'status': row[6],
+                'created_at': row[7]
+            })
+        
+        conn.close()
+        return loans
+        
+    except Exception as e:
+        if conn:
+            conn.close()
+        return []
+
+def has_member_borrowed_book(member_id: int, book_id: int) -> bool:
+    """Check if a member has already borrowed a specific book"""
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        
+        cursor.execute('''
+            SELECT COUNT(*) FROM library_loans 
+            WHERE member_id = ? AND book_id = ? AND status = 'active'
+        ''', (member_id, book_id))
+        
+        count = cursor.fetchone()[0]
+        conn.close()
+        
+        return count > 0
+        
+    except Exception as e:
+        if conn:
+            conn.close()
+        return False
+
+def has_member_reserved_book(member_id: int, book_id: int) -> bool:
+    """Check if a member has already reserved a specific book"""
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        
+        cursor.execute('''
+            SELECT COUNT(*) FROM library_reservations 
+            WHERE member_id = ? AND book_id = ? AND status = 'active'
+        ''', (member_id, book_id))
+        
+        count = cursor.fetchone()[0]
+        conn.close()
+        
+        return count > 0
+        
+    except Exception as e:
+        if conn:
+            conn.close()
+        return False

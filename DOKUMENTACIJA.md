@@ -311,3 +311,4 @@ Aplikacija je napisana koristeći moderne Python tehnologije i prati najbolje pr
 
 
 
+

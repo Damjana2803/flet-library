@@ -22,7 +22,10 @@ from utils.library_db import (
     get_library_statistics as db_get_library_statistics,
     create_reservation as db_create_reservation,
     get_member_reservations as db_get_member_reservations,
-    cancel_reservation as db_cancel_reservation
+    cancel_reservation as db_cancel_reservation,
+    get_member_loans as db_get_member_loans,
+    has_member_borrowed_book as db_has_member_borrowed_book,
+    has_member_reserved_book as db_has_member_reserved_book
 )
 
 async def get_all_users():
@@ -133,3 +136,15 @@ def get_member_reservations(member_id):
 def cancel_reservation(reservation_id, member_id):
     """Cancel a reservation"""
     return db_cancel_reservation(reservation_id, member_id)
+
+def get_member_loans(member_id):
+    """Get all loans for a member"""
+    return db_get_member_loans(member_id)
+
+def has_member_borrowed_book(member_id, book_id):
+    """Check if a member has already borrowed a specific book"""
+    return db_has_member_borrowed_book(member_id, book_id)
+
+def has_member_reserved_book(member_id, book_id):
+    """Check if a member has already reserved a specific book"""
+    return db_has_member_reserved_book(member_id, book_id)

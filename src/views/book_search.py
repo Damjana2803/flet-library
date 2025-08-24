@@ -2,7 +2,7 @@ import flet as ft
 from flet_navigator import PageData
 from components.navbar import NavBar
 from components.snack_bar import SnackBar
-from controllers.admin_controller import get_all_books, create_loan, create_reservation
+from controllers.admin_controller import get_all_books, create_loan, create_reservation, has_member_borrowed_book, has_member_reserved_book
 from utils.session_manager import get_current_user
 
 def book_search(page_data: PageData) -> None:
@@ -15,6 +15,64 @@ def book_search(page_data: PageData) -> None:
     # Search results and filters
     search_results = []
     all_books = []
+    
+    # Book details fields (using Text components like in admin)
+    detail_title = ft.Text("", size=20, weight=ft.FontWeight.BOLD)
+    detail_author = ft.Text("", size=16)
+    detail_isbn = ft.Text("", size=14)
+    detail_category = ft.Text("", size=14)
+    detail_year = ft.Text("", size=14)
+    detail_publisher = ft.Text("", size=14)
+    detail_location = ft.Text("", size=14)
+    detail_copies = ft.Text("", size=14)
+    detail_status = ft.Text("", size=14)
+    detail_description = ft.Text("", size=14, color=ft.Colors.GREY_600)
+    
+    # Book details modal (using exact same pattern as admin books)
+    details_modal_overlay = ft.Container(
+        content=ft.Container(
+            content=ft.Column([
+                ft.Container(
+                    content=ft.Row([
+                        ft.Text("Detalji knjige", size=20, weight=ft.FontWeight.BOLD, expand=True),
+                        ft.IconButton(
+                            icon=ft.Icons.CLOSE,
+                            on_click=lambda e: close_details_dialog(),
+                            tooltip="Zatvori"
+                        )
+                    ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
+                    border=ft.border.only(bottom=ft.border.BorderSide(1, ft.Colors.GREY_300)),
+                    padding=ft.padding.only(bottom=20),
+                ),
+                ft.Container(
+                    content=ft.Column([
+                        detail_title,
+                        detail_author,
+                        detail_isbn,
+                        detail_category,
+                        detail_year,
+                        detail_publisher,
+                        detail_location,
+                        detail_copies,
+                        detail_status,
+                        ft.Divider(height=16),
+                        ft.Text("Opis:", size=14, weight=ft.FontWeight.BOLD),
+                        detail_description,
+                    ], spacing=8, scroll=ft.ScrollMode.AUTO),
+                    padding=ft.padding.only(top=10),
+                    expand=True,
+                ),
+            ], spacing=20),
+            padding=30,
+            bgcolor=ft.Colors.WHITE,
+            border_radius=10,
+            width=500,
+            margin=ft.margin.only(top=20, bottom=20),
+        ),
+        alignment=ft.alignment.center,
+        bgcolor=ft.Colors.with_opacity(0.5, ft.Colors.BLACK),
+        visible=False,
+    )
     
     def on_search(e):
         query = search_tf.value.strip() if search_tf.value else ""
@@ -94,17 +152,73 @@ def book_search(page_data: PageData) -> None:
             )
         else:
             for book in search_results:
+                # Check if current user has borrowed or reserved this book
+                current_user = get_current_user()
+                member_id = current_user.get('member_id') if current_user else None
+                
+                is_borrowed = False
+                is_reserved = False
+                
+                if member_id:
+                    is_borrowed = has_member_borrowed_book(member_id, book.get('id'))
+                    is_reserved = has_member_reserved_book(member_id, book.get('id'))
+                
+                # Create status indicators
+                status_indicators = []
+                
+                # Availability status
+                if book.get("available_copies", 0) > 0:
+                    status_indicators.append(
+                        ft.Container(
+                            content=ft.Text("Dostupno", size=10, color=ft.Colors.WHITE, weight=ft.FontWeight.BOLD),
+                            bgcolor=ft.Colors.GREEN,
+                            padding=ft.padding.symmetric(horizontal=8, vertical=4),
+                            border_radius=12,
+                        )
+                    )
+                else:
+                    status_indicators.append(
+                        ft.Container(
+                            content=ft.Text("Nedostupno", size=10, color=ft.Colors.WHITE, weight=ft.FontWeight.BOLD),
+                            bgcolor=ft.Colors.RED,
+                            padding=ft.padding.symmetric(horizontal=8, vertical=4),
+                            border_radius=12,
+                        )
+                    )
+                
+                # Borrowed status
+                if is_borrowed:
+                    status_indicators.append(
+                        ft.Container(
+                            content=ft.Text("Iznajmljena", size=10, color=ft.Colors.WHITE, weight=ft.FontWeight.BOLD),
+                            bgcolor=ft.Colors.BLUE,
+                            padding=ft.padding.symmetric(horizontal=8, vertical=4),
+                            border_radius=12,
+                        )
+                    )
+                
+                # Reserved status
+                if is_reserved:
+                    status_indicators.append(
+                        ft.Container(
+                            content=ft.Text("Rezervisana", size=10, color=ft.Colors.WHITE, weight=ft.FontWeight.BOLD),
+                            bgcolor=ft.Colors.ORANGE,
+                            padding=ft.padding.symmetric(horizontal=8, vertical=4),
+                            border_radius=12,
+                        )
+                    )
+                
                 book_card = ft.Card(
                     content=ft.Container(
                         content=ft.Column(
                             [
                                 ft.Row(
                                     [
-                                                                                 ft.Icon(
-                                             ft.Icons.BOOK,
-                                             color=ft.Colors.BLUE if book.get("available_copies", 0) > 0 else ft.Colors.GREY,
-                                             size=24,
-                                         ),
+                                        ft.Icon(
+                                            ft.Icons.BOOK,
+                                            color=ft.Colors.BLUE if book.get("available_copies", 0) > 0 else ft.Colors.GREY,
+                                            size=24,
+                                        ),
                                         ft.Column(
                                             [
                                                 ft.Text(
@@ -117,22 +231,17 @@ def book_search(page_data: PageData) -> None:
                                                     size=14,
                                                     color=ft.Colors.GREY_600,
                                                 ),
-                                                                                                 ft.Text(
-                                                     f"Kategorija: {book['category']} ({book['publication_year']})",
-                                                     size=12,
-                                                     color=ft.Colors.GREY_500,
-                                                 ),
+                                                ft.Text(
+                                                    f"Kategorija: {book['category']} ({book['publication_year']})",
+                                                    size=12,
+                                                    color=ft.Colors.GREY_500,
+                                                ),
                                             ],
                                             expand=True,
                                         ),
                                         ft.Column(
                                             [
-                                                                                                 ft.Text(
-                                                     "Dostupno" if book.get("available_copies", 0) > 0 else "Nedostupno",
-                                                     size=12,
-                                                     color=ft.Colors.GREEN if book.get("available_copies", 0) > 0 else ft.Colors.RED,
-                                                     weight=ft.FontWeight.BOLD,
-                                                 ),
+                                                ft.Row(status_indicators, spacing=4),
                                                 ft.Text(
                                                     book["location"],
                                                     size=10,
@@ -146,11 +255,12 @@ def book_search(page_data: PageData) -> None:
                                 ),
                                 ft.Row(
                                     [
-                                                                                 ft.TextButton(
-                                             "Rezerviši" if book.get("available_copies", 0) == 0 else "Iznajmi",
-                                             icon=ft.Icons.BOOKMARK if book.get("available_copies", 0) == 0 else ft.Icons.LIBRARY_BOOKS,
-                                             on_click=lambda e, b=book: on_book_action(b),
-                                         ),
+                                        ft.TextButton(
+                                            "Rezerviši" if book.get("available_copies", 0) == 0 else "Iznajmi",
+                                            icon=ft.Icons.BOOKMARK if book.get("available_copies", 0) == 0 else ft.Icons.LIBRARY_BOOKS,
+                                            on_click=lambda e, b=book: on_book_action(b),
+                                            disabled=is_borrowed or is_reserved,  # Disable if already borrowed or reserved
+                                        ),
                                         ft.TextButton(
                                             "Detalji",
                                             icon=ft.Icons.INFO,
@@ -190,6 +300,17 @@ def book_search(page_data: PageData) -> None:
             page.update()
             return
         
+        # Get the member_id from the current user (not the user id)
+        member_id = current_user.get('member_id')
+        if not member_id:
+            page.overlay.append(
+                SnackBar("Član nije pronađen!", duration=3000)
+            )
+            page.update()
+            return
+        
+        print(f"🔍 DEBUG: Borrowing book - Book ID: {book.get('id')}, Member ID: {member_id}")
+        
         # Check if user can borrow more books
         current_loans = current_user.get('current_loans', 0)
         max_loans = current_user.get('max_loans', 5)
@@ -204,8 +325,10 @@ def book_search(page_data: PageData) -> None:
         # Use database function to create loan
         success, message = create_loan(
             book_id=book.get('id'),
-            member_id=current_user.get('id')
+            member_id=member_id  # Use member_id, not user id
         )
+        
+        print(f"🔍 DEBUG: Loan creation result - Success: {success}, Message: {message}")
         
         if success:
             # Show success message
@@ -235,11 +358,24 @@ def book_search(page_data: PageData) -> None:
             page.update()
             return
         
+        # Get the member_id from the current user (not the user id)
+        member_id = current_user.get('member_id')
+        if not member_id:
+            page.overlay.append(
+                SnackBar("Član nije pronađen!", duration=3000)
+            )
+            page.update()
+            return
+        
+        print(f"🔍 DEBUG: Reserving book - Book ID: {book.get('id')}, Member ID: {member_id}")
+        
         # Use database function to create reservation
         success, message = create_reservation(
             book_id=book.get('id'),
-            member_id=current_user.get('id')
+            member_id=member_id  # Use member_id, not user id
         )
+        
+        print(f"🔍 DEBUG: Reservation creation result - Success: {success}, Message: {message}")
         
         if success:
             page.overlay.append(
@@ -254,51 +390,31 @@ def book_search(page_data: PageData) -> None:
         page.update()
     
     def show_book_details(book):
-        # Show book details modal
-        page.dialog = ft.AlertDialog(
-            title=ft.Text(book["title"]),
-            content=ft.Column(
-                [
-                    ft.Container(
-                        content=ft.Column([
-                            ft.Text(f"Autor: {book['author']}", size=16, weight=ft.FontWeight.BOLD),
-                            ft.Text(f"ISBN: {book['isbn']}", size=14),
-                            ft.Text(f"Kategorija: {book['category']}", size=14),
-                            ft.Text(f"Godina izdanja: {book['publication_year']}", size=14),
-                            ft.Text(f"Izdavač: {book['publisher']}", size=14),
-                            ft.Text(f"Lokacija: {book['location']}", size=14),
-                            ft.Text(f"Ukupno primeraka: {book['total_copies']}", size=14),
-                            ft.Text(f"Dostupno primeraka: {book['available_copies']}", size=14),
-                            ft.Text(
-                                f"Status: {'Dostupno' if book.get('available_copies', 0) > 0 else 'Nedostupno'}",
-                                size=14,
-                                color=ft.Colors.GREEN if book.get('available_copies', 0) > 0 else ft.Colors.RED,
-                                weight=ft.FontWeight.BOLD,
-                            ),
-                            ft.Divider(height=16),
-                            ft.Text("Opis:", size=14, weight=ft.FontWeight.BOLD),
-                            ft.Text(
-                                book.get('description', 'Nema opisa'),
-                                size=14,
-                                color=ft.Colors.GREY_600,
-                            ),
-                        ], spacing=8),
-                        padding=20,
-                    )
-                ],
-                spacing=8,
-                scroll=ft.ScrollMode.AUTO,
-            ),
-            actions=[
-                ft.TextButton("Zatvori", on_click=lambda _: close_dialog()),
-            ],
-        )
-        page.dialog.open = True
+        print(f"🔍 DEBUG: show_book_details called for book: {book.get('title')}")
+        
+        # Populate detail fields (exactly like admin does)
+        detail_title.value = book["title"]
+        detail_author.value = f"Autor: {book['author']}"
+        detail_isbn.value = f"ISBN: {book['isbn']}"
+        detail_category.value = f"Kategorija: {book['category']}"
+        detail_year.value = f"Godina izdanja: {book['publication_year']}"
+        detail_publisher.value = f"Izdavač: {book['publisher']}"
+        detail_location.value = f"Lokacija: {book['location']}"
+        detail_copies.value = f"Ukupno primeraka: {book['total_copies']}, Dostupno: {book['available_copies']}"
+        detail_status.value = f"Status: {'Dostupno' if book.get('available_copies', 0) > 0 else 'Nedostupno'}"
+        detail_status.color = ft.Colors.GREEN if book.get('available_copies', 0) > 0 else ft.Colors.RED
+        detail_description.value = book.get('description', 'Nema opisa')
+        
+        # Show the modal (exactly like admin does)
+        details_modal_overlay.visible = True
         page.update()
+        print(f"✅ DEBUG: Modal opened for book: {book.get('title')}")
     
-    def close_dialog():
-        page.dialog.open = False
+    def close_details_dialog():
+        print(f"🔍 DEBUG: close_details_dialog called")
+        details_modal_overlay.visible = False
         page.update()
+        print(f"✅ DEBUG: Modal closed")
     
     def load_books():
         """Load all books from database and update category options"""
@@ -392,32 +508,24 @@ def book_search(page_data: PageData) -> None:
                 [category_dropdown, availability_dropdown, reset_button],
                 spacing=16,
             ),
-            ft.Divider(height=32),
-            ft.Text(
-                "Rezultati pretrage",
-                size=20,
-                weight=ft.FontWeight.BOLD,
-                color=ft.Colors.BLUE_900,
-            ),
             results_column,
         ],
-        spacing=16,
-        scroll=ft.ScrollMode.AUTO,
+        spacing=20,
         expand=True,
     )
     
-    # Load all books when page opens
+    # Load books on page load
     load_books()
     
-    return ft.Column([
-        navbar_content,
-        ft.Container(
-            content=ft.Column(
-                [content],
-                scroll=ft.ScrollMode.AUTO,
+    # Return using ft.Stack exactly like admin books (THE KEY!)
+    return ft.Stack([
+        ft.Column([
+            navbar_content,
+            ft.Container(
+                content=content,
+                padding=20,
                 expand=True,
             ),
-            padding=20,
-            expand=True,
-        )
+        ], expand=True),
+        details_modal_overlay,  # Add the modal overlay on top
     ], expand=True)
