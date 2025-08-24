@@ -18,12 +18,312 @@ def my_loans(page_data: PageData) -> None:
     all_loans = get_all_loans()
     
     # Filter loans for current user
-    user_id = current_user.get("id")
-    loans = [loan for loan in all_loans if loan.get("member_id") == user_id]
+    member_id = current_user.get("member_id")  # Use member_id, not user id
+    loans = [loan for loan in all_loans if loan.get("member_id") == member_id]
     
     # If no loans found, show empty state
     if not loans:
         loans = []
+    
+    def refresh_page_content():
+        """Refresh the page content with fresh data from database"""
+        # Get fresh data from database
+        fresh_all_loans = get_all_loans()
+        fresh_member_id = current_user.get("member_id")
+        fresh_loans = [loan for loan in fresh_all_loans if loan.get("member_id") == fresh_member_id]
+        
+        # Clear the page
+        page.clean()
+        
+        # Rebuild the content manually
+        navbar_content = NavBar("member", page_data)
+        
+        # Rebuild loans list with fresh data
+        if fresh_loans:
+            loans_content = [
+                ft.Text(
+                    "Moje iznajmljene knjige",
+                    size=24,
+                    weight=ft.FontWeight.BOLD,
+                    color=ft.Colors.BLUE_900,
+                ),
+            ] + [
+                ft.Card(
+                    content=ft.Container(
+                        content=ft.Column(
+                            [
+                                ft.Row(
+                                    [
+                                        ft.Icon(
+                                            ft.Icons.BOOK,
+                                            color=get_status_color(loan["status"]),
+                                            size=24,
+                                        ),
+                                        ft.Column(
+                                            [
+                                                ft.Text(
+                                                    loan["book_title"],
+                                                    size=18,
+                                                    weight=ft.FontWeight.BOLD,
+                                                ),
+                                                ft.Text(
+                                                    f"Autor: {loan.get('book_author', 'Nepoznati autor')}",
+                                                    size=14,
+                                                    color=ft.Colors.GREY_600,
+                                                ),
+                                                ft.Text(
+                                                    f"Iznajmljeno: {format_date(loan['loan_date'])}",
+                                                    size=12,
+                                                    color=ft.Colors.GREY_500,
+                                                ),
+                                            ],
+                                            expand=True,
+                                        ),
+                                        ft.Column(
+                                            [item for item in [
+                                                ft.Text(
+                                                    get_status_text(loan["status"]),
+                                                    size=12,
+                                                    color=get_status_color(loan["status"]),
+                                                    weight=ft.FontWeight.BOLD,
+                                                ),
+                                                ft.Text(
+                                                    f"Vraćanje: {format_date(loan['due_date'])}",
+                                                    size=10,
+                                                    color=ft.Colors.GREY_500,
+                                                ),
+                                            ] if item is not None],
+                                            horizontal_alignment=ft.CrossAxisAlignment.END,
+                                        ),
+                                    ],
+                                    spacing=16,
+                                ),
+                                ft.Row(
+                                    [button for button in [
+                                        ft.TextButton(
+                                            "Produži",
+                                            icon=ft.Icons.REFRESH,
+                                            on_click=lambda l=loan: renew_loan(l["id"]),
+                                        ) if loan["status"] == "active" else None,
+                                        ft.TextButton(
+                                            "Vrati",
+                                            icon=ft.Icons.CHECK_CIRCLE,
+                                            on_click=lambda l=loan: return_book(l["id"]),
+                                        ) if loan["status"] == "active" else None,
+                                    ] if button is not None],
+                                    alignment=ft.MainAxisAlignment.END,
+                                ),
+                            ],
+                            spacing=12,
+                        ),
+                        padding=16,
+                    ),
+                ) for loan in fresh_loans
+            ]
+            
+            loans_list = ft.Column(loans_content, spacing=16)
+        else:
+            loans_list = ft.Column([
+                ft.Text(
+                    "Moje iznajmljene knjige",
+                    size=24,
+                    weight=ft.FontWeight.BOLD,
+                    color=ft.Colors.BLUE_900,
+                ),
+                ft.Card(
+                    content=ft.Container(
+                        content=ft.Column([
+                            ft.Icon(ft.Icons.BOOK, size=48, color=ft.Colors.GREY_400),
+                            ft.Text(
+                                "Nemate iznajmljenih knjiga",
+                                size=16,
+                                color=ft.Colors.GREY_600,
+                                text_align=ft.TextAlign.CENTER,
+                            ),
+                        ], alignment=ft.MainAxisAlignment.CENTER, horizontal_alignment=ft.CrossAxisAlignment.CENTER),
+                        padding=40,
+                    ),
+                ),
+            ], spacing=16)
+        
+        # Summary card
+        active_loans = len([loan for loan in fresh_loans if loan["status"] == "active"])
+        
+        summary_card = ft.Card(
+            content=ft.Container(
+                content=ft.Column(
+                    [
+                        ft.Text(
+                            "Pregled",
+                            size=18,
+                            weight=ft.FontWeight.BOLD,
+                            color=ft.Colors.BLUE_900,
+                        ),
+                        ft.Divider(height=16),
+                        ft.Row(
+                            [
+                                ft.Column(
+                                    [
+                                        ft.Text(
+                                            str(active_loans),
+                                            size=24,
+                                            weight=ft.FontWeight.BOLD,
+                                            color=ft.Colors.GREEN,
+                                        ),
+                                        ft.Text(
+                                            "Aktivne knjige",
+                                            size=12,
+                                            color=ft.Colors.GREY_600,
+                                        ),
+                                    ],
+                                    alignment=ft.MainAxisAlignment.CENTER,
+                                    horizontal_alignment=ft.CrossAxisAlignment.CENTER,
+                                    expand=True,
+                                ),
+                            ],
+                            spacing=16,
+                        ),
+                    ],
+                    spacing=16,
+                ),
+                padding=20,
+            ),
+        )
+        
+        # Create list of all controls for ListView
+        all_controls = [
+            summary_card,
+            ft.Divider(height=32),
+        ]
+        
+        # Add loans content directly to ListView
+        if fresh_loans:
+            all_controls.append(
+                ft.Text(
+                    "Moje iznajmljene knjige",
+                    size=24,
+                    weight=ft.FontWeight.BOLD,
+                    color=ft.Colors.BLUE_900,
+                )
+            )
+            # Add each loan card directly
+            for loan in fresh_loans:
+                loan_card = ft.Card(
+                    content=ft.Container(
+                        content=ft.Column(
+                            [
+                                ft.Row(
+                                    [
+                                        ft.Icon(
+                                            ft.Icons.BOOK,
+                                            color=get_status_color(loan["status"]),
+                                            size=24,
+                                        ),
+                                        ft.Column(
+                                            [
+                                                ft.Text(
+                                                    loan["book_title"],
+                                                    size=18,
+                                                    weight=ft.FontWeight.BOLD,
+                                                ),
+                                                ft.Text(
+                                                    f"Autor: {loan.get('book_author', 'Nepoznati autor')}",
+                                                    size=14,
+                                                    color=ft.Colors.GREY_600,
+                                                ),
+                                                ft.Text(
+                                                    f"Iznajmljeno: {format_date(loan['loan_date'])}",
+                                                    size=12,
+                                                    color=ft.Colors.GREY_500,
+                                                ),
+                                            ],
+                                            expand=True,
+                                        ),
+                                        ft.Column(
+                                            [item for item in [
+                                                ft.Text(
+                                                    get_status_text(loan["status"]),
+                                                    size=12,
+                                                    color=get_status_color(loan["status"]),
+                                                    weight=ft.FontWeight.BOLD,
+                                                ),
+                                                ft.Text(
+                                                    f"Vraćanje: {format_date(loan['due_date'])}",
+                                                    size=10,
+                                                    color=ft.Colors.GREY_500,
+                                                ),
+                                            ] if item is not None],
+                                            horizontal_alignment=ft.CrossAxisAlignment.END,
+                                        ),
+                                    ],
+                                    spacing=16,
+                                ),
+                                ft.Row(
+                                    [button for button in [
+                                        ft.TextButton(
+                                            "Produži",
+                                            icon=ft.Icons.REFRESH,
+                                            on_click=lambda e, l=loan: renew_loan(l["id"]),
+                                        ) if loan["status"] == "active" else None,
+                                        ft.TextButton(
+                                            "Vrati",
+                                            icon=ft.Icons.CHECK_CIRCLE,
+                                            on_click=lambda e, l=loan: return_book(l["id"]),
+                                        ) if loan["status"] == "active" else None,
+                                    ] if button is not None],
+                                    alignment=ft.MainAxisAlignment.END,
+                                ),
+                            ],
+                            spacing=12,
+                        ),
+                        padding=16,
+                    ),
+                )
+                all_controls.append(loan_card)
+        else:
+            all_controls.extend([
+                ft.Text(
+                    "Moje iznajmljene knjige",
+                    size=24,
+                    weight=ft.FontWeight.BOLD,
+                    color=ft.Colors.BLUE_900,
+                ),
+                ft.Card(
+                    content=ft.Container(
+                        content=ft.Column([
+                            ft.Icon(ft.Icons.BOOK, size=48, color=ft.Colors.GREY_400),
+                            ft.Text(
+                                "Nemate iznajmljenih knjiga",
+                                size=16,
+                                color=ft.Colors.GREY_600,
+                                text_align=ft.TextAlign.CENTER,
+                            ),
+                        ], alignment=ft.MainAxisAlignment.CENTER, horizontal_alignment=ft.CrossAxisAlignment.CENTER),
+                        padding=40,
+                    ),
+                )
+            ])
+        
+        # Add bottom spacing
+        all_controls.append(ft.Container(height=50))
+        
+        # Main content with ListView for proper scrolling
+        content = ft.ListView(
+            controls=all_controls,
+            spacing=16,
+            expand=True,
+        )
+        
+        # Rebuild the page
+        page.add(ft.Column([
+            navbar_content,
+            ft.Container(
+                content=content,
+                padding=20,
+                expand=True,
+            )
+        ], expand=True))
+        page.update()
     
     def renew_loan(loan_id):
         """Renew a loan - extend the due date by 14 days"""
@@ -44,8 +344,8 @@ def my_loans(page_data: PageData) -> None:
                 
                 if success:
                     show_snack_bar(page, "Knjiga je uspešno produžena za 14 dana!", "SUCCESS")
-                    # Refresh the page
-                    page_data.navigate('my_loans')
+                    # Refresh the page content
+                    refresh_page_content()
                 else:
                     show_snack_bar(page, f"Greška: {message}", "ERROR")
                 return
@@ -61,8 +361,8 @@ def my_loans(page_data: PageData) -> None:
             
             if success:
                 show_snack_bar(page, "Knjiga je uspešno vraćena!", "SUCCESS")
-                # Refresh the page immediately
-                page_data.navigate('my_loans')
+                # Refresh the page content immediately
+                refresh_page_content()
             else:
                 show_snack_bar(page, f"Greška: {message}", "ERROR")
             

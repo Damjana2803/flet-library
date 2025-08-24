@@ -13,16 +13,11 @@ def register_screen(page_data: PageData):
 		loader = Loader(page)
 		asyncio.create_task(loader.create_loader())		
 		
-		# Split full name into first and last name
-		name_parts = name_tf.value.strip().split(' ', 1)
-		first_name = name_parts[0] if name_parts else ""
-		last_name = name_parts[1] if len(name_parts) > 1 else ""
-		
 		register = register_user(
 			email=email_tf.value,
 			password=password_tf.value,
-			first_name=first_name,
-			last_name=last_name,
+			first_name=first_name_tf.value,
+			last_name=last_name_tf.value,
 			phone=phone_tf.value,
 			address=address_tf.value,
 			membership_type=membership_type.value
@@ -37,7 +32,8 @@ def register_screen(page_data: PageData):
 		else: 
 			# Reset border colors
 			email_tf.border_color = None
-			name_tf.border_color = None
+			first_name_tf.border_color = None
+			last_name_tf.border_color = None
 			password_tf.border_color = None
 			phone_tf.border_color = None
 			address_tf.border_color = None
@@ -57,10 +53,16 @@ def register_screen(page_data: PageData):
 		hint_text="Unesite vašu e-adresu"
 	)
 
-	name_tf = ft.TextField(
+	first_name_tf = ft.TextField(
 		prefix_icon=ft.Icons.PERSON,
-		label='Ime i prezime *',
-		hint_text="Unesite vaše ime i prezime"
+		label='Ime *',
+		hint_text="Unesite vaše ime"
+	)
+
+	last_name_tf = ft.TextField(
+		prefix_icon=ft.Icons.PERSON,
+		label='Prezime *',
+		hint_text="Unesite vaše prezime"
 	)
 
 	password_tf = ft.TextField(
@@ -117,7 +119,8 @@ def register_screen(page_data: PageData):
 				ft.Column(
 					[ 
 						email_tf, 
-						name_tf, 
+						first_name_tf, 
+						last_name_tf, 
 						password_tf, 
 						phone_tf, 
 						address_tf, 
