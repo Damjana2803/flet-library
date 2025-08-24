@@ -717,13 +717,17 @@ def get_library_statistics() -> Dict:
     conn = get_db_connection()
     cursor = conn.cursor()
     
-    # Total books
+    # Total books (different titles)
     cursor.execute("SELECT COUNT(*) FROM library_books")
     total_books = cursor.fetchone()[0]
     
-    # Available books
+    # Total copies
+    cursor.execute("SELECT SUM(total_copies) FROM library_books")
+    total_copies = cursor.fetchone()[0] or 0
+    
+    # Available copies
     cursor.execute("SELECT SUM(available_copies) FROM library_books")
-    available_books = cursor.fetchone()[0] or 0
+    available_copies = cursor.fetchone()[0] or 0
     
     # Total members
     cursor.execute("SELECT COUNT(*) FROM library_members")
@@ -742,7 +746,8 @@ def get_library_statistics() -> Dict:
     
     return {
         'total_books': total_books,
-        'available_books': available_books,
+        'total_copies': total_copies,
+        'available_copies': available_copies,
         'total_members': total_members,
         'active_loans': active_loans,
         'overdue_loans': overdue_loans

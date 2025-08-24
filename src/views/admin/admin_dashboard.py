@@ -72,7 +72,8 @@ def admin_dashboard(page_data: PageData) -> None:
     
     # Calculate statistics from database
     total_books = stats.get('total_books', 0)
-    available_books = stats.get('available_books', 0)
+    total_copies = stats.get('total_copies', 0)
+    available_copies = stats.get('available_copies', 0)
     total_members = stats.get('total_members', 0)
     active_loans = stats.get('active_loans', 0)
     
@@ -85,7 +86,7 @@ def admin_dashboard(page_data: PageData) -> None:
                     [
                         ft.Text("Ukupno knjiga", size=14, color=ft.Colors.GREY_600),
                         ft.Text(str(total_books), size=24, weight=ft.FontWeight.BOLD, color=ft.Colors.BLUE),
-                        ft.Text(f"Dostupno: {available_books}", size=12, color=ft.Colors.GREY_500),
+                        ft.Text(f"Ukupno kopija: {total_copies}", size=12, color=ft.Colors.GREY_500),
                     ],
                     spacing=8,
                     alignment=ft.MainAxisAlignment.CENTER,
@@ -160,12 +161,14 @@ def admin_dashboard(page_data: PageData) -> None:
                         ft.Text("Knjige", size=14 if is_mobile else 16, weight=ft.FontWeight.BOLD, color=ft.Colors.BLUE_900),
                         ft.Column([
                             ft.Text(f"• Ukupno: {total_books} knjiga", size=12 if is_mobile else 14),
-                            ft.Text(f"• Dostupno: {available_books} knjiga", size=12 if is_mobile else 14, color=ft.Colors.GREEN),
-                            ft.Text(f"• Nedostupno: {total_books - available_books} knjiga", size=12 if is_mobile else 14, color=ft.Colors.RED),
+                            ft.Text(f"• Ukupno kopija: {total_copies}", size=12 if is_mobile else 14),
+                            ft.Text(f"• Dostupno: {available_copies} kopija", size=12 if is_mobile else 14, color=ft.Colors.GREEN),
+                            ft.Text(f"• Nedostupno: {total_copies - available_copies} kopija", size=12 if is_mobile else 14, color=ft.Colors.RED),
                         ], spacing=6) if is_mobile else ft.Row([
                             ft.Text(f"• Ukupno: {total_books} knjiga", size=14),
-                            ft.Text(f"• Dostupno: {available_books} knjiga", size=14, color=ft.Colors.GREEN),
-                            ft.Text(f"• Nedostupno: {total_books - available_books} knjiga", size=14, color=ft.Colors.RED),
+                            ft.Text(f"• Ukupno kopija: {total_copies}", size=14),
+                            ft.Text(f"• Dostupno: {available_copies} kopija", size=14, color=ft.Colors.GREEN),
+                            ft.Text(f"• Nedostupno: {total_copies - available_copies} kopija", size=14, color=ft.Colors.RED),
                         ], wrap=True),
                         ft.Divider(height=16),
                         ft.Text("Članovi", size=14 if is_mobile else 16, weight=ft.FontWeight.BOLD, color=ft.Colors.BLUE_900),

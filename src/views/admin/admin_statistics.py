@@ -26,7 +26,8 @@ def admin_statistics(page_data: PageData) -> None:
     
     # Use database statistics
     total_books = stats.get('total_books', 0)
-    available_books = stats.get('available_books', 0)
+    total_copies = stats.get('total_copies', 0)
+    available_copies = stats.get('available_copies', 0)
     total_members = stats.get('total_members', 0)
     active_loans = stats.get('active_loans', 0)
     
@@ -41,7 +42,8 @@ def admin_statistics(page_data: PageData) -> None:
     # Real statistics data
     stats_data = {
         "total_books": total_books,
-        "available_books": available_books,
+        "total_copies": total_copies,
+        "available_copies": available_copies,
         "total_members": total_members,
         "active_members": active_members,
         "active_loans": active_loans
@@ -124,7 +126,7 @@ def admin_statistics(page_data: PageData) -> None:
         # Mobile: Stack all cards vertically
         stats_layout = ft.Column([
             create_stat_card("Ukupno knjiga", stats_data["total_books"], ft.Icons.BOOK, ft.Colors.BLUE),
-            create_stat_card("Dostupno knjiga", stats_data["available_books"], ft.Icons.CHECK_CIRCLE, ft.Colors.GREEN),
+            create_stat_card("Dostupno kopija", stats_data["available_copies"], ft.Icons.CHECK_CIRCLE, ft.Colors.GREEN),
             create_stat_card("Aktivnih članova", stats_data["active_members"], ft.Icons.PEOPLE, ft.Colors.ORANGE),
             create_stat_card("Iznajmljeno", stats_data["active_loans"], ft.Icons.LIBRARY_BOOKS, ft.Colors.PURPLE),
             create_stat_card("Ukupno članova", stats_data["total_members"], ft.Icons.GROUP, ft.Colors.TEAL),
@@ -133,7 +135,7 @@ def admin_statistics(page_data: PageData) -> None:
         # Desktop: 2 rows of 2 cards each, plus one more
         first_row = ft.Row([
             create_stat_card("Ukupno knjiga", stats_data["total_books"], ft.Icons.BOOK, ft.Colors.BLUE),
-            create_stat_card("Dostupno knjiga", stats_data["available_books"], ft.Icons.CHECK_CIRCLE, ft.Colors.GREEN),
+            create_stat_card("Dostupno kopija", stats_data["available_copies"], ft.Icons.CHECK_CIRCLE, ft.Colors.GREEN),
         ], spacing=16)
         
         second_row = ft.Row([
